@@ -1,94 +1,54 @@
-:root {
-  --bg: #111344;
-  --surface: #03256c;
-  --surface-hover: #163a7e;
-  --text: #c7d0f0;
-  --text-h: #ffffff;
-  --border: #2541b2;
-  --accent: #06bee1;
-  --accent-bg: rgba(6, 190, 225, 0.12);
-  --accent-border: rgba(6, 190, 225, 0.5);
-  --success: #dd6e42;
-  --success-bg: rgba(221, 110, 66, 0.15);
-  --shadow: rgba(0, 0, 0, 0.35) 0 10px 25px -5px, rgba(0, 0, 0, 0.2) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: 'Segoe UI', system-ui, Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+@theme {
+  --color-bg: #111344;
+  --color-surface: #03256c;
+  --color-surface-hover: #163a7e;
+  --color-border: #2541b2;
+  --color-text: #c7d0f0;
+  --color-text-h: #ffffff;
+  --color-accent: #06bee1;
+  --color-warm: #dd6e42;
+  --color-danger: #ff6b6b;
+  --color-caution: #ffc107;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* :root usa 18px, así que espaciados y radios van en px para no escalar con rem */
+  --spacing: 4px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+
+  --font-sans: 'Segoe UI', system-ui, Roboto, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+}
+
+@layer base {
+  :root {
+    font: 18px/145% var(--font-sans);
+    letter-spacing: 0.18px;
+    color: var(--color-text);
+    background: var(--color-bg);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    @media (max-width: 1024px) {
+      font-size: 16px;
+    }
   }
-}
 
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1, h2 {
-  font-family: var(--sans);
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 48px;
-  letter-spacing: -1.2px;
-  margin: 16px 0 32px;
-  @media (max-width: 1024px) {
-    font-size: 32px;
-    margin: 12px 0 20px;
+  #root {
+    width: 1126px;
+    max-width: 100%;
+    margin: 0 auto;
+    text-align: center;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
   }
-}
-
-p { margin: 0; }
-
-code {
-  font-family: var(--mono);
-  font-size: 15px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: var(--text-h);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-button {
-  font-family: var(--sans);
-  font-size: 16px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--accent);
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
-
-button:hover {
-  background: var(--accent);
-  color: var(--bg);
-}
-
-button:active {
-  transform: scale(0.98);
 }

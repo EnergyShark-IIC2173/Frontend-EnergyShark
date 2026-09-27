@@ -5,10 +5,13 @@ import { LoginButton } from './components/LoginButton'
 import { LogoutButton } from './components/LogoutButton'
 import { CycleHistory } from './components/CycleHistory'
 import { DistanceTable } from './components/DistanceTable'
-import './App.css'
 import tiburonImg from './assets/tiburon.png'
 import { NegotiationAdmin } from './components/NegotiationAdmin'
 import { RejectedMessages } from './components/RejectedMessages'
+
+const buttonBase = 'cursor-pointer rounded-lg border border-accent/50 px-5 py-2.5 font-sans text-[16px] leading-[normal] font-semibold tracking-normal [transition:background_0.2s,transform_0.1s] active:scale-[0.98]'
+const tabActive = `${buttonBase} bg-accent text-bg`
+const tabInactive = `${buttonBase} bg-surface text-accent`
 
 function App() {
   const { isAuthenticated, isLoading, user } = useAuth0()
@@ -31,72 +34,60 @@ function App() {
   if (isLoading) return <p>Cargando Auth0...</p>
 
   return (
-    <section id="center" style={{ padding: '40px 20px', gap: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <img src={tiburonImg} alt="Silueta de tiburón" style={{ width: '160px', height: '150px' }} />
-      <h1 style={{ margin: 0 }}>EnergyShark</h1>
+    <section id="center" className="flex grow flex-col place-content-center items-center gap-6 px-5 py-10">
+      <img src={tiburonImg} alt="Silueta de tiburón" className="h-[150px] w-[160px]" />
+      <h1 className="m-0 font-sans text-[48px] font-semibold tracking-[-1.2px] text-text-h max-[1025px]:text-[32px]">EnergyShark</h1>
 
-      <div style={{ width: '100%', maxWidth: '400px' }}>
+      <div className="w-full max-w-[400px]">
         {!isAuthenticated ? (
           <LoginButton />
         ) : (
           <>
             <LogoutButton />
-            <p style={{ marginTop: '16px', color: 'var(--text-h)' }}>
+            <p className="mt-4 text-text-h">
               Sesión iniciada como {user?.email}
             </p>
-            <button onClick={checkHealth} style={{ marginTop: '16px' }}>
+            <button onClick={checkHealth} className={`${buttonBase} mt-4 bg-accent/12 text-accent hover:bg-accent hover:text-bg`}>
               Probar /health con token
             </button>
           </>
         )}
 
         {healthStatus && (
-          <p style={{ marginTop: '16px', color: 'var(--success)' }}>OK: {healthStatus}</p>
+          <p className="mt-4 text-warm">OK: {healthStatus}</p>
         )}
         {error && (
-          <p style={{ marginTop: '16px', color: '#ff6b6b' }}>Error: {error}</p>
+          <p className="mt-4 text-danger">Error: {error}</p>
         )}
       </div>
 
       {isAuthenticated && (
-        <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+        <div className="flex w-full max-w-[800px] flex-col items-center gap-6">
           
           {/* Navegación por pestañas */}
-          <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '16px', width: '100%', justifyContent: 'center' }}>
+          <div className="flex w-full justify-center gap-4 border-b border-border pb-4">
             <button 
               onClick={() => setActiveView('history')}
-              style={{ 
-                background: activeView === 'history' ? 'var(--accent)' : 'var(--surface)', 
-                color: activeView === 'history' ? 'var(--bg)' : 'var(--accent)' 
-              }}
+              className={activeView === 'history' ? tabActive : tabInactive}
             >
               Historial de Ciclos
             </button>
             <button 
               onClick={() => setActiveView('distance')}
-              style={{ 
-                background: activeView === 'distance' ? 'var(--accent)' : 'var(--surface)', 
-                color: activeView === 'distance' ? 'var(--bg)' : 'var(--accent)' 
-              }}
+              className={activeView === 'distance' ? tabActive : tabInactive}
             >
               Conectividad
             </button>
             <button 
               onClick={() => setActiveView('negotiations')}
-              style={{ 
-                background: activeView === 'negotiations' ? 'var(--accent)' : 'var(--surface)', 
-                color: activeView === 'negotiations' ? 'var(--bg)' : 'var(--accent)' 
-              }}
+              className={activeView === 'negotiations' ? tabActive : tabInactive}
             >
               Negociaciones
             </button>
 
             <button 
               onClick={() => setActiveView('rejected')}
-              style={{ 
-                background: activeView === 'rejected' ? 'var(--accent)' : 'var(--surface)', 
-                color: activeView === 'rejected' ? 'var(--bg)' : 'var(--accent)' 
-              }}
+              className={activeView === 'rejected' ? tabActive : tabInactive}
             >
               Errores/NACKs
             </button>

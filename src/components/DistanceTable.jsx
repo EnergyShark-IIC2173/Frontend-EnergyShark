@@ -4,45 +4,34 @@ export function DistanceTable() {
   const { cityId, updatedAt, distances } = distanceData
 
   return (
-    <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ textAlign: 'left' }}>
-        <h2 style={{ marginBottom: '8px' }}>Conectividad de {cityId}</h2>
-        <p style={{ color: 'var(--text)', margin: 0 }}>
+    <div className="flex w-full max-w-[800px] flex-col gap-6">
+      <div className="text-left">
+        <h2 className="mt-[0.83em] mb-2 font-sans text-[1.5em] font-semibold text-text-h">Conectividad de {cityId}</h2>
+        <p className="m-0 text-text">
           Última actualización: {new Date(updatedAt).toLocaleString()}
         </p>
       </div>
 
-      <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow)'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+        <table className="w-full border-collapse text-left">
           <thead>
-            <tr style={{ background: 'var(--surface-hover)', borderBottom: '1px solid var(--border)' }}>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Destino</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Distancia (m)</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Costo (cr/kWh*km)</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Estado</th>
+            <tr className="border-b border-border bg-surface-hover">
+              <th className="p-4 text-left font-bold text-text-h">Destino</th>
+              <th className="p-4 text-left font-bold text-text-h">Distancia (m)</th>
+              <th className="p-4 text-left font-bold text-text-h">Costo (cr/kWh*km)</th>
+              <th className="p-4 text-left font-bold text-text-h">Estado</th>
             </tr>
           </thead>
           <tbody>
             {Object.entries(distances).map(([destination, data]) => (
-              <tr key={destination} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '16px', color: 'var(--accent)', fontWeight: 'bold' }}>
+              <tr key={destination} className="border-b border-border">
+                <td className="p-4 font-bold text-accent">
                   {destination}
                 </td>
-                <td style={{ padding: '16px' }}>{data.distance.toLocaleString()}</td>
-                <td style={{ padding: '16px' }}>{data.transportCost}</td>
-                <td style={{ padding: '16px' }}>
-                  <span style={{ 
-                    padding: '4px 8px', 
-                    borderRadius: '4px', 
-                    background: data.enabled ? 'var(--success-bg)' : '#ff6b6b33',
-                    color: data.enabled ? 'var(--success)' : '#ff6b6b'
-                  }}>
+                <td className="p-4">{data.distance.toLocaleString()}</td>
+                <td className="p-4">{data.transportCost}</td>
+                <td className="p-4">
+                  <span className={`rounded-sm px-2 py-1 ${data.enabled ? 'bg-warm/15 text-warm' : 'bg-danger/20 text-danger'}`}>
                     {data.enabled ? 'Habilitado' : 'Deshabilitado'}
                   </span>
                 </td>

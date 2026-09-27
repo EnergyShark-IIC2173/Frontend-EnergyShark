@@ -2,46 +2,34 @@ import rejectedData from '../mocks/rejected.json'
 
 export function RejectedMessages() {
   return (
-    <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ textAlign: 'left' }}>
-        <h2 style={{ marginBottom: '8px' }}>Registro de Duplicados y NACKs</h2>
+    <div className="flex w-full max-w-[900px] flex-col gap-6">
+      <div className="text-left">
+        <h2 className="mt-[0.83em] mb-2 font-sans text-[1.5em] font-semibold text-text-h">Registro de Duplicados y NACKs</h2>
       </div>
 
-      <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow)'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+        <table className="w-full border-collapse text-left">
           <thead>
-            <tr style={{ background: 'var(--surface-hover)', borderBottom: '1px solid var(--border)' }}>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Tipo (Kind)</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Razón</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Código</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Detalle</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Fecha</th>
+            <tr className="border-b border-border bg-surface-hover">
+              <th className="p-4 text-left font-bold text-text-h">Tipo (Kind)</th>
+              <th className="p-4 text-left font-bold text-text-h">Razón</th>
+              <th className="p-4 text-left font-bold text-text-h">Código</th>
+              <th className="p-4 text-left font-bold text-text-h">Detalle</th>
+              <th className="p-4 text-left font-bold text-text-h">Fecha</th>
             </tr>
           </thead>
           <tbody>
             {rejectedData.map((msg) => (
-              <tr key={msg.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '16px' }}>
-                  <span style={{ 
-                    padding: '4px 8px', 
-                    borderRadius: '4px', 
-                    fontSize: '14px',
-                    background: msg.kind === 'duplicate' ? 'rgba(255, 193, 7, 0.15)' : '#ff6b6b33',
-                    color: msg.kind === 'duplicate' ? '#ffc107' : '#ff6b6b'
-                  }}>
+              <tr key={msg.id} className="border-b border-border">
+                <td className="p-4">
+                  <span className={`rounded-sm px-2 py-1 text-[14px] ${msg.kind === 'duplicate' ? 'bg-caution/15 text-caution' : 'bg-danger/20 text-danger'}`}>
                     {msg.kind.toUpperCase()}
                   </span>
                 </td>
-                <td style={{ padding: '16px', color: 'var(--text-h)' }}>{msg.reason || '-'}</td>
-                <td style={{ padding: '16px' }}>{msg.code || '-'}</td>
-                <td style={{ padding: '16px' }}>{msg.detail}</td>
-                <td style={{ padding: '16px' }}>{new Date(msg.occurredAt).toLocaleString()}</td>
+                <td className="p-4 text-text-h">{msg.reason || '-'}</td>
+                <td className="p-4">{msg.code || '-'}</td>
+                <td className="p-4">{msg.detail}</td>
+                <td className="p-4">{new Date(msg.occurredAt).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

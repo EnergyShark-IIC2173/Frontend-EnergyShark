@@ -1,25 +1,34 @@
 @import "tailwindcss";
 
+/* Paleta del rediseño V6 (DF-008). Valores confirmados contra docs/design/idea_energyshark.png */
 @theme {
-  --color-bg: #111344;
-  --color-surface: #03256c;
-  --color-surface-hover: #163a7e;
-  --color-border: #2541b2;
-  --color-text: #c7d0f0;
+  --color-panel: #0f1739;
+  --color-bg: #171d45;
+  --color-surface: #1f2550;
+  --color-surface-hover: #272e5c;
+  --color-border: #2c3360;
+
   --color-text-h: #ffffff;
-  --color-accent: #06bee1;
-  --color-warm: #dd6e42;
-  --color-danger: #ff6b6b;
-  --color-caution: #ffc107;
+  --color-text: #aab0cc;
+  /* Solo labels en mayúsculas; nunca sobre surface-hover (4,14:1, DF-012) */
+  --color-muted: #8a90b8;
 
-  /* :root usa 18px, así que espaciados y radios van en px para no escalar con rem */
-  --spacing: 4px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --color-accent: #00c2ec;
+  --color-accent-from: #00e8f8;
+  --color-accent-to: #1e8ae5;
+  --color-frame-from: #1492e4;
+  --color-frame-to: #00e6f6;
 
-  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --color-pink: #ff2e6e;
+  --color-pink-soft: #ff80a8;
+  --color-magenta: #b5179e;
+  --color-violet: #6a4fd1;
+  --color-orange: #f95521;
+  --color-orange-soft: #ff8a5c;
+  --color-success: #34d399;
+  --color-danger: #ff80a8;
+
+  --shadow-card: 0 8px 24px -8px rgb(0 0 0 / 0.45);
 
   --font-sans: 'Segoe UI', system-ui, Roboto, sans-serif;
   --font-mono: ui-monospace, Consolas, monospace;
@@ -27,28 +36,20 @@
 
 @layer base {
   :root {
-    font: 18px/145% var(--font-sans);
-    letter-spacing: 0.18px;
+    font-family: var(--font-sans);
+    line-height: 1.5;
     color: var(--color-text);
     background: var(--color-bg);
+    color-scheme: dark;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-
-    @media (max-width: 1024px) {
-      font-size: 16px;
-    }
   }
 
   #root {
-    width: 1126px;
-    max-width: 100%;
-    margin: 0 auto;
-    text-align: center;
     min-height: 100svh;
     display: flex;
     flex-direction: column;
-    box-sizing: border-box;
   }
 }

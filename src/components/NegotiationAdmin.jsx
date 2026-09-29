@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import negotiationMock from '../mocks/negotiation.json'
+import { Badge } from './ui/Badge'
+import { Card } from './ui/Card'
+import { TableCard } from './ui/TableCard'
+import { btnPrimary, inputBase, labelBase, td, th, tr } from './ui/classes'
 
 export function NegotiationAdmin() {
   const [negotiations, setNegotiations] = useState(negotiationMock)
@@ -30,87 +34,89 @@ export function NegotiationAdmin() {
   }
 
   return (
-    <div className="flex w-full max-w-[900px] flex-col gap-8">
+    <div className="flex w-full flex-col gap-6">
       
-      <div className="rounded-xl border border-border bg-surface p-6">
-        <h2 className="mt-0 mb-[0.83em] text-left font-sans text-[1.5em] font-semibold text-text-h">Crear Propuesta de Negociación</h2>
-        <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-4">
-          <div className="flex flex-1 flex-col text-left">
-            <label className="mb-2 text-[14px] text-text-h">Ciclo</label>
+      <Card>
+        <h2 className="text-xl font-semibold tracking-tight text-text-h">Crear Propuesta de Negociación</h2>
+        <form onSubmit={handleSubmit} className="mt-5 grid grid-cols-1 items-end gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-cycle" className={labelBase}>Ciclo</label>
             <input 
+              id="neg-cycle"
               type="text" 
               value={formData.cycleId}
               onChange={e => setFormData({...formData, cycleId: e.target.value})}
-              className="rounded-md border border-border bg-bg p-2.5 font-[Arial] text-[13.3333px] leading-[normal] tracking-normal text-text box-content"
+              className={inputBase}
               required 
             />
           </div>
-          <div className="flex flex-1 flex-col text-left">
-            <label className="mb-2 text-[14px] text-text-h">Dirección</label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-direction" className={labelBase}>Dirección</label>
             <select 
+              id="neg-direction"
               value={formData.direction}
               onChange={e => setFormData({...formData, direction: e.target.value})}
-              className="rounded-md border border-border bg-bg p-2.5 font-[Arial] text-[13.3333px] leading-[normal] tracking-normal text-text"
+              className={inputBase}
             >
               <option value="take">Comprar (Take)</option>
               <option value="give">Vender (Give)</option>
             </select>
           </div>
-          <div className="flex flex-1 flex-col text-left">
-            <label className="mb-2 text-[14px] text-text-h">Cantidad (kWh)</label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-quantity" className={labelBase}>Cantidad <span className="normal-case">(kWh)</span></label>
             <input 
+              id="neg-quantity"
               type="number" 
               value={formData.quantity}
               onChange={e => setFormData({...formData, quantity: e.target.value})}
-              className="rounded-md border border-border bg-bg p-2.5 font-[Arial] text-[13.3333px] leading-[normal] tracking-normal text-text box-content"
+              className={`${inputBase} tabular-nums`}
               required min="1"
             />
           </div>
-          <div className="flex flex-1 flex-col text-left">
-            <label className="mb-2 text-[14px] text-text-h">Precio (cr)</label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-price" className={labelBase}>Precio <span className="normal-case">(cr)</span></label>
             <input 
+              id="neg-price"
               type="number" 
               value={formData.pricePerEnergy}
               onChange={e => setFormData({...formData, pricePerEnergy: e.target.value})}
-              className="rounded-md border border-border bg-bg p-2.5 font-[Arial] text-[13.3333px] leading-[normal] tracking-normal text-text box-content"
+              className={`${inputBase} tabular-nums`}
               required min="1" step="0.01"
             />
           </div>
-          <button type="submit" className="h-[42px] cursor-pointer rounded-lg border border-accent/50 bg-accent/12 px-5 py-2.5 font-sans text-[16px] leading-[normal] font-semibold tracking-normal text-accent [transition:background_0.2s,transform_0.1s] hover:bg-accent hover:text-bg active:scale-[0.98]">Proponer</button>
+          <button type="submit" className={`${btnPrimary} h-11 w-full xl:w-auto`}>Proponer</button>
         </form>
-      </div>
+      </Card>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-border bg-surface-hover">
-              <th className="p-4 text-left font-bold text-text-h">ID / Ciclo</th>
-              <th className="p-4 text-left font-bold text-text-h">Tipo</th>
-              <th className="p-4 text-left font-bold text-text-h">Energía</th>
-              <th className="p-4 text-left font-bold text-text-h">Precio Ofertado</th>
-              <th className="p-4 text-left font-bold text-text-h">Estado</th>
+      <TableCard>
+        <thead>
+          <tr>
+            <th className={th}>ID / Ciclo</th>
+            <th className={th}>Tipo</th>
+            <th className={th}>Energía</th>
+            <th className={th}>Precio Ofertado</th>
+            <th className={th}>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {negotiations.map((neg) => (
+            <tr key={neg.id} className={tr}>
+              <td className={td}>
+                <span className="block font-medium text-text-h tabular-nums">#{neg.id}</span>
+                <span className="block text-xs">{neg.cycleId}</span>
+              </td>
+              <td className={`${td} font-semibold text-accent`}>{neg.direction.toUpperCase()}</td>
+              <td className={`${td} whitespace-nowrap tabular-nums`}>{neg.quantity} kWh</td>
+              <td className={`${td} whitespace-nowrap tabular-nums`}>{neg.pricePerEnergy} cr</td>
+              <td className={td}>
+                <Badge tone={neg.status === 'confirmed' || neg.status === 'paid' ? 'success' : 'neutral'}>
+                  {neg.status}
+                </Badge>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {negotiations.map((neg) => (
-              <tr key={neg.id} className="border-b border-border">
-                <td className="p-4">
-                  <span className="text-text-h">#{neg.id}</span><br/>
-                  <span className="text-[12px]">{neg.cycleId}</span>
-                </td>
-                <td className="p-4 text-accent">{neg.direction.toUpperCase()}</td>
-                <td className="p-4">{neg.quantity} kWh</td>
-                <td className="p-4">{neg.pricePerEnergy} cr</td>
-                <td className="p-4">
-                  <span className={`rounded-sm px-2 py-1 text-[14px] ${neg.status === 'confirmed' || neg.status === 'paid' ? 'bg-warm/15 text-warm' : 'bg-white/10 text-text-h'}`}>
-                    {neg.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </TableCard>
     </div>
   )
 }

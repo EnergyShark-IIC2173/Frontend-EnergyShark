@@ -333,5 +333,6 @@ grep -rnE "App\.css|hero\.png|react\.svg|vite\.svg|icons\.svg|favicon" src index
 Ninguno. El bloqueo de Bash durante la planificación se resolvió al habilitar Esteban los permisos.
 
 ## Observaciones
-- Si el equipo quiere un PNG real en `docs/design/`, puede convertirlo con `sips -s format png`. Hoy el archivo es AVIF con extensión `.png`.
+- ~~Si el equipo quiere un PNG real en `docs/design/`, puede convertirlo con `sips -s format png`. Hoy el archivo es AVIF con extensión `.png`.~~
+  **Corrección (misma fecha):** a pedido de Esteban, antes del commit `da7269d` se sobrescribió `docs/design/idea_energyshark.png` con la conversión. `file` → "PNG image data, 740 x 493". Ver `02-index-css.md`.
 - Esta subtarea se registró **durante** la sesión, antes de su commit.

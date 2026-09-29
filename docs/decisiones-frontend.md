@@ -136,11 +136,11 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 | `accent-from` / `accent-to` | `#00e8f8` → `#1e8ae5` | degradado del botón primario (texto `panel`) |
 | `frame-from` / `frame-to` | `#1492e4` → `#00e6f6` | fondo del login (sin texto encima) |
 | `pink` / `magenta` | `#ff2e6e` / `#b5179e` | decorativo: logo, puntos, barra destacada |
-| `pink-soft` | `#ff6b98` | texto de pills rosas |
+| `pink-soft` | ~~`#ff6b98`~~ `#ff80a8` (ver corrección en DF-012) | texto de pills rosas |
 | `violet` | `#6a4fd1` | decorativo: puntos |
 | `orange` / `orange-soft` | `#f95521` / `#ff8a5c` | decorativo / texto de la pill "duplicate" |
 | `success` | `#34d399` | OK de /health, pill confirmed/paid |
-| `danger` | `#ff6b98` | Error de /health, "Deshabilitado" |
+| `danger` | ~~`#ff6b98`~~ `#ff80a8` (ver corrección en DF-012) | Error de /health, "Deshabilitado" |
 
 - **Reglas de uso:**
   - Ningún componente usa hex sueltos.
@@ -204,6 +204,10 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - texto del botón (`panel`) 11,56 sobre `#00e8f8` y 4,84 sobre `#1e8ae5`;
   - pills: `accent` 5,21, `pink-soft` 4,78, `orange-soft` 5,40 y `success` 5,66, cada una sobre su fondo al 15 %.
 - **Hallazgo del script:** `text-muted` sobre `surface-hover` da 4,14:1 y no pasa. Por eso el `thead` va sobre `surface` con un divisor, y `text-muted` nunca se usa sobre `surface-hover`.
+- **Corrección (misma fecha, pasada final V6R.9):** al agregar al script los pares sobre `surface-hover` (hover de filas), la pill rosa daba ~~4,78:1~~ 4,28:1 (`#ff6b98` sobre `pink/15` en una fila con hover) y no pasaba. `pink-soft` y `danger` pasan a `#ff80a8`:
+  - 4,88:1 sobre la pill en hover;
+  - 5,45:1 sobre la pill normal;
+  - 7,41:1 sobre `panel`.
 - **`text` / `text-muted`:** se diferencian por tipografía, no solo por color: `text-muted` va en mayúsculas, `text-xs` y `tracking-widest`.
 - **Foco:** `focus-visible` con outline cian en los botones y en los ítems del sidebar; anillo cian en inputs y select.
 - **Movimiento:** las transiciones usan `motion-reduce:transition-none`.

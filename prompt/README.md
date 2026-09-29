@@ -15,7 +15,14 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 | Carpeta | Unidad | Rama / PR |
 |---|---|---|
 | `tarea-v6-tailwind/` | V6 — skill de diseño y migración de estilos a Tailwind CSS v4 | `v6-deploy` (PR pendiente) |
+| `tarea-v6-rediseno/` | V6 — rediseño visual: login, app shell y vistas V2–V5 (solo capa visual) | `feat/v6-rediseno`, apilada sobre `v6-deploy` (PR pendiente) |
+
+**Sesión del 2026-09-29 (`tarea-v6-rediseno/`):**
+- A diferencia de la anterior, **hubo prompt maestro** de Esteban, que está literal en `01`.
+- Plan aprobado con 11 ajustes y ALTO de validación visual después de `App.jsx`.
+- Sin subagentes: Bash y los subagentes estuvieron bloqueados durante la planificación.
+- Los registros `01` a `09` se escribieron **durante** la sesión, cada uno al terminar su archivo y antes de pasar al siguiente. Las decisiones DF-008 a DF-013 se commitearon antes del código (`da7269d`).
 
 Tareas **no** ejecutadas:
-- El resto de V6: estados de carga y de error, y responsive de las vistas.
+- ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.
 - La integración real de V2–V5 con la API, que depende de U9 y U10 del backend.

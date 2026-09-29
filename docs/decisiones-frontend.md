@@ -100,3 +100,123 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 - **Regla:** no se toca estado, handlers, datos, Auth0 ni la estructura de los elementos.
 - **Estilos condicionales:** mantienen exactamente la misma condición, ahora dentro de `className`. Ejemplo: `activeView === 'history' ? tabActive : tabInactive`.
 - **Única adición en JS:** tres constantes con cadenas de clases en `src/App.jsx` (`buttonBase`, `tabActive`, `tabInactive`), para no repetir la clase de botón 4 veces.
+
+---
+
+> Las decisiones DF-008 a DF-013 se escribieron el 2026-09-29, **antes** de implementar el rediseño, en su propio commit (RDOC01). Plan aprobado por Esteban con ajustes; detalle en `prompt/tarea-v6-rediseno/`.
+
+## DF-008 — Rediseño visual basado en `docs/design/idea_energyshark.png` (reemplaza a DF-003)
+
+**Fecha:** 2026-09-29 · **Unidad:** V6 · **Decidió:** Esteban (humana: pedido, paleta muestreada y ajustes) + agente (muestreo y cálculo de contraste)
+
+- **Contexto:**
+  - La migración 1:1 (DF-003) mantuvo un diseño pobre.
+  - Esteban pidió un rediseño completo, basado en una imagen de referencia: dashboard oscuro con topbar, sidebar y cards; navy con acentos cian, rosa, violeta y naranja.
+- **Paso 0 (verificación de la imagen):**
+  - `idea_energyshark.png` es un AVIF por dentro. Se convirtió con `sips` a un PNG en un directorio temporal y se muestreó por zonas (color dominante).
+  - Coincidieron: fondo principal, card, divisor, rosa, naranja y violeta.
+  - Se ajustaron, con aprobación de Esteban:
+    - `panel`: de `#0a0f2e` a `#0f1739`;
+    - topbar en `bg` (no en `panel`), como en la imagen;
+    - degradado del marco: `#1492e4 → #00e6f6`;
+    - inicio del degradado del botón: `#00e8f8`.
+- **Tokens finales (`src/index.css`, `@theme`):**
+
+| Token | Hex | Uso |
+|---|---|---|
+| `panel` | `#0f1739` | sidebar (con `border-r border-border`), inputs |
+| `bg` | `#171d45` | fondo del área principal y de la topbar |
+| `surface` | `#1f2550` | cards, `thead` |
+| `surface-hover` | `#272e5c` | hover de filas e ítems del sidebar |
+| `border` | `#2c3360` | divisores finos |
+| `text-h` | `#ffffff` | títulos, cifras |
+| `text` | `#aab0cc` | texto secundario, celdas (subido desde `#9aa0bd` para separarlo de `text-muted`) |
+| `text-muted` | `#8a90b8` | labels en `text-xs uppercase tracking-widest font-semibold` (el `#5d6389` de la imagen no pasa AA) |
+| `accent` | `#00c2ec` | acento primario: nav activa, pills, foco |
+| `accent-from` / `accent-to` | `#00e8f8` → `#1e8ae5` | degradado del botón primario (texto `panel`) |
+| `frame-from` / `frame-to` | `#1492e4` → `#00e6f6` | fondo del login (sin texto encima) |
+| `pink` / `magenta` | `#ff2e6e` / `#b5179e` | decorativo: logo, puntos, barra destacada |
+| `pink-soft` | `#ff6b98` | texto de pills rosas |
+| `violet` | `#6a4fd1` | decorativo: puntos |
+| `orange` / `orange-soft` | `#f95521` / `#ff8a5c` | decorativo / texto de la pill "duplicate" |
+| `success` | `#34d399` | OK de /health, pill confirmed/paid |
+| `danger` | `#ff6b98` | Error de /health, "Deshabilitado" |
+
+- **Reglas de uso:**
+  - Ningún componente usa hex sueltos.
+  - Cian es el acento principal y rosa el secundario; violeta y naranja solo diferencian categorías.
+  - El naranja queda reservado para "duplicate" (Presupuesto de V2 va en cian).
+  - Ningún texto va directo sobre el degradado del login: el blanco sobre `#00e6f6` da 1,54:1.
+- **Alternativa descartada:** mantener el 1:1 de DF-003 y solo pulir detalles. No resolvía el pedido.
+- **Dónde vive:** `src/index.css`. La paleta anterior sigue documentada en `docs/diseno-anterior.md`.
+
+## DF-009 — `:root` a 16px y escala por defecto de Tailwind (reemplaza a DF-004)
+
+**Fecha:** 2026-09-29 · **Unidad:** V6 · **Decidió:** agente (propuesta en el plan) + Esteban (aprobación)
+
+- **Contexto:** DF-004 fijó `--spacing: 4px` y radios en px porque `:root` usaba 18px y el objetivo era un 1:1 exacto. Con el rediseño, ese objetivo ya no existe.
+- **Decisión:**
+  - `:root` a 16px, sin la media query de 1024px ni el `letter-spacing` global.
+  - Se quitan los overrides `--spacing` y `--radius-*`: vuelven la escala en rem y los tamaños de texto de Tailwind, cada uno con su line-height.
+  - `#root` pierde `width: 1126px` y `text-align: center`, para permitir un app shell a ancho completo.
+- **Por qué:** el rem respeta el tamaño de letra que el usuario configura en el navegador (accesibilidad), y ya no hacen falta valores arbitrarios en px.
+- **Alternativa descartada:** mantener 18px con `--spacing: 4px`. Obliga a seguir usando tamaños arbitrarios en todos los componentes.
+
+## DF-010 — Componentes UI presentacionales y `classes.js`
+
+**Fecha:** 2026-09-29 · **Unidad:** V6 · **Decidió:** agente (propuesta) + Esteban (aprobación)
+
+- **Decisión:** crear `src/components/ui/` sin estado, sin hooks y sin lógica:
+  - `classes.js`: constantes de clases (`btnPrimary`, `btnSecondary`, `navItemActive`, `navItemInactive`, `inputBase`, `labelBase`, `th`, `td`, `focusRing`), que reemplazan `buttonBase`, `tabActive` y `tabInactive` de `App.jsx`;
+  - `Card`, `Badge` (`tone`), `StatTile`, `TableCard` e `Icon` (SVG inline con `aria-hidden="true"`, dibujados a mano, sin dependencias).
+- **Regla:** las condiciones existentes se copian literales. Solo cambia a qué clase o tono apuntan. Ejemplo: `tone={data.enabled ? 'cyan' : 'pink'}`.
+- **Alternativa descartada:**
+  - Librerías de componentes o de íconos (Phosphor, Lucide): agregan dependencias, y el pedido las prohíbe sin aprobación.
+  - Un componente `NavItem`: los 4 `<button>` quedan en `App.jsx`, para que el diff de sus `onClick` sea nulo.
+
+## DF-011 — App shell y responsive sin estado
+
+**Fecha:** 2026-09-29 · **Unidad:** V6 · **Decidió:** Esteban (humana: layout, ubicación de /health, orden en móvil) + agente (implementación)
+
+- **Decisión:**
+  - **Login:** pantalla completa con el degradado del marco y una card central (logo, título, subtítulo y botón). "Cargando Auth0..." usa la misma pantalla.
+  - **Shell:**
+    - topbar en `bg` con un divisor inferior (logo, "Sesión iniciada como", email y botón de salir);
+    - sidebar en `panel` con `border-r` (4 ítems con ícono y la card "Estado de la API");
+    - área principal.
+  - **Render (decisión humana):** los mensajes `healthStatus` y `error` pasan a la card "Estado de la API", dentro de la rama autenticada. Sus condiciones y expresiones se copian literales.
+    - Es equivalente en la práctica: `checkHealth` solo se ejecuta autenticado, y `logout` hace una redirección completa que vuelve a montar `App`.
+  - **Responsive (< md):**
+    - la nav pasa a ser una fila horizontal con `overflow-x-auto`;
+    - la card de API va **al final del contenido** (orden en el DOM: nav → main → API);
+    - desde `md`, un grid la ubica al fondo del sidebar.
+  - Las tablas hacen scroll dentro de su card.
+  - Sin estado nuevo.
+- **Descartado (requiere lógica):** menú hamburguesa e indicador de carga de /health, porque necesitan estado nuevo.
+
+## DF-012 — Accesibilidad: contraste AA, foco visible, labels y `lang`
+
+**Fecha:** 2026-09-29 · **Unidad:** V6 · **Decidió:** agente (cálculo) + Esteban (aprobación de atributos)
+
+- **Contraste:** calculado con la fórmula WCAG en un script. Todo el texto normal da ≥ 4,5:1:
+  - `text` 6,81 y `text-muted` 4,70 sobre `surface`;
+  - sobre `panel`: `text-muted` 5,63 y `text` 8,15;
+  - texto del botón (`panel`) 11,56 sobre `#00e8f8` y 4,84 sobre `#1e8ae5`;
+  - pills: `accent` 5,21, `pink-soft` 4,78, `orange-soft` 5,40 y `success` 5,66, cada una sobre su fondo al 15 %.
+- **Hallazgo del script:** `text-muted` sobre `surface-hover` da 4,14:1 y no pasa. Por eso el `thead` va sobre `surface` con un divisor, y `text-muted` nunca se usa sobre `surface-hover`.
+- **`text` / `text-muted`:** se diferencian por tipografía, no solo por color: `text-muted` va en mayúsculas, `text-xs` y `tracking-widest`.
+- **Foco:** `focus-visible` con outline cian en los botones y en los ítems del sidebar; anillo cian en inputs y select.
+- **Movimiento:** las transiciones usan `motion-reduce:transition-none`.
+- **Cambios de atributos aprobados por Esteban:**
+  - V4: `id` + `htmlFor` en los 4 pares label/control, sin tocar `type`, `value`, `required`, `min` ni `step`;
+  - `index.html`: `lang="es"` y `<title>EnergyShark</title>`.
+- **Descartado:** formatear cifras con `toLocaleString` en V2, porque cambia expresiones.
+
+## DF-013 — `App.css` y assets sin uso
+
+**Fecha:** 2026-09-29 · **Unidad:** V6 · **Decidió:** Esteban (humana)
+
+- **`App.css`:** se mantiene según DF-006, sin tocarlo, aunque ningún archivo lo importa (verificado con `grep`).
+- **Assets sin referencias** (`grep -rnE` en `src`, `index.html` y `vite.config.js`): `src/assets/hero.png`, `react.svg`, `vite.svg` y `public/icons.svg`.
+  - Solo se reportan; no se borran.
+  - En uso: `tiburon.png` (`App.jsx`) y `favicon.svg` (`index.html`).

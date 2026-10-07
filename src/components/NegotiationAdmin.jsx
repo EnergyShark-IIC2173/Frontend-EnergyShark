@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import negotiationMock from '../mocks/negotiation.json'
+import { Badge } from './ui/Badge'
+import { Card } from './ui/Card'
+import { TableCard } from './ui/TableCard'
+import { btnPrimary, inputBase, labelBase, td, th, tr } from './ui/classes'
 
 export function NegotiationAdmin() {
   const [negotiations, setNegotiations] = useState(negotiationMock)
@@ -30,91 +34,89 @@ export function NegotiationAdmin() {
   }
 
   return (
-    <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="flex w-full flex-col gap-6">
       
-      <div style={{ background: 'var(--surface)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-        <h2 style={{ marginTop: 0, textAlign: 'left' }}>Crear Propuesta de Negociación</h2>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', flex: 1 }}>
-            <label style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-h)' }}>Ciclo</label>
+      <Card>
+        <h2 className="text-xl font-semibold tracking-tight text-text-h">Crear Propuesta de Negociación</h2>
+        <form onSubmit={handleSubmit} className="mt-5 grid grid-cols-1 items-end gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-cycle" className={labelBase}>Ciclo</label>
             <input 
+              id="neg-cycle"
               type="text" 
               value={formData.cycleId}
               onChange={e => setFormData({...formData, cycleId: e.target.value})}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              className={inputBase}
               required 
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', flex: 1 }}>
-            <label style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-h)' }}>Dirección</label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-direction" className={labelBase}>Dirección</label>
             <select 
+              id="neg-direction"
               value={formData.direction}
               onChange={e => setFormData({...formData, direction: e.target.value})}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              className={inputBase}
             >
               <option value="take">Comprar (Take)</option>
               <option value="give">Vender (Give)</option>
             </select>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', flex: 1 }}>
-            <label style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-h)' }}>Cantidad (kWh)</label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-quantity" className={labelBase}>Cantidad <span className="normal-case">(kWh)</span></label>
             <input 
+              id="neg-quantity"
               type="number" 
               value={formData.quantity}
               onChange={e => setFormData({...formData, quantity: e.target.value})}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              className={`${inputBase} tabular-nums`}
               required min="1"
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', flex: 1 }}>
-            <label style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-h)' }}>Precio (cr)</label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="neg-price" className={labelBase}>Precio <span className="normal-case">(cr)</span></label>
             <input 
+              id="neg-price"
               type="number" 
               value={formData.pricePerEnergy}
               onChange={e => setFormData({...formData, pricePerEnergy: e.target.value})}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              className={`${inputBase} tabular-nums`}
               required min="1" step="0.01"
             />
           </div>
-          <button type="submit" style={{ height: '42px' }}>Proponer</button>
+          <button type="submit" className={`${btnPrimary} h-11 w-full xl:w-auto`}>Proponer</button>
         </form>
-      </div>
+      </Card>
 
-      <div style={{ background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: 'var(--surface-hover)', borderBottom: '1px solid var(--border)' }}>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>ID / Ciclo</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Tipo</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Energía</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Precio Ofertado</th>
-              <th style={{ padding: '16px', color: 'var(--text-h)' }}>Estado</th>
+      <TableCard>
+        <thead>
+          <tr>
+            <th className={th}>ID / Ciclo</th>
+            <th className={th}>Tipo</th>
+            <th className={th}>Energía</th>
+            <th className={th}>Precio Ofertado</th>
+            <th className={th}>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {negotiations.map((neg) => (
+            <tr key={neg.id} className={tr}>
+              <td className={td}>
+                <span className="block font-medium text-text-h tabular-nums">#{neg.id}</span>
+                <span className="block text-xs">{neg.cycleId}</span>
+              </td>
+              <td className={`${td} font-semibold text-accent`}>{neg.direction.toUpperCase()}</td>
+              <td className={`${td} whitespace-nowrap tabular-nums`}>{neg.quantity} kWh</td>
+              <td className={`${td} whitespace-nowrap tabular-nums`}>{neg.pricePerEnergy} cr</td>
+              <td className={td}>
+                <Badge tone={neg.status === 'confirmed' || neg.status === 'paid' ? 'success' : 'neutral'}>
+                  {neg.status}
+                </Badge>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {negotiations.map((neg) => (
-              <tr key={neg.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '16px' }}>
-                  <span style={{ color: 'var(--text-h)' }}>#{neg.id}</span><br/>
-                  <span style={{ fontSize: '12px' }}>{neg.cycleId}</span>
-                </td>
-                <td style={{ padding: '16px', color: 'var(--accent)' }}>{neg.direction.toUpperCase()}</td>
-                <td style={{ padding: '16px' }}>{neg.quantity} kWh</td>
-                <td style={{ padding: '16px' }}>{neg.pricePerEnergy} cr</td>
-                <td style={{ padding: '16px' }}>
-                  <span style={{ 
-                    padding: '4px 8px', borderRadius: '4px', fontSize: '14px',
-                    background: neg.status === 'confirmed' || neg.status === 'paid' ? 'var(--success-bg)' : 'rgba(255, 255, 255, 0.1)',
-                    color: neg.status === 'confirmed' || neg.status === 'paid' ? 'var(--success)' : 'var(--text-h)'
-                  }}>
-                    {neg.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </TableCard>
     </div>
   )
 }

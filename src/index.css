@@ -1,94 +1,55 @@
-:root {
-  --bg: #111344;
-  --surface: #03256c;
-  --surface-hover: #163a7e;
-  --text: #c7d0f0;
-  --text-h: #ffffff;
-  --border: #2541b2;
-  --accent: #06bee1;
-  --accent-bg: rgba(6, 190, 225, 0.12);
-  --accent-border: rgba(6, 190, 225, 0.5);
-  --success: #dd6e42;
-  --success-bg: rgba(221, 110, 66, 0.15);
-  --shadow: rgba(0, 0, 0, 0.35) 0 10px 25px -5px, rgba(0, 0, 0, 0.2) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: 'Segoe UI', system-ui, Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/* Paleta del rediseño V6 (DF-008). Valores confirmados contra docs/design/idea_energyshark.png */
+@theme {
+  --color-panel: #0f1739;
+  --color-bg: #171d45;
+  --color-surface: #1f2550;
+  --color-surface-hover: #272e5c;
+  --color-border: #2c3360;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --color-text-h: #ffffff;
+  --color-text: #aab0cc;
+  /* Solo labels en mayúsculas; nunca sobre surface-hover (4,14:1, DF-012) */
+  --color-muted: #8a90b8;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  --color-accent: #00c2ec;
+  --color-accent-from: #00e8f8;
+  --color-accent-to: #1e8ae5;
+  --color-frame-from: #1492e4;
+  --color-frame-to: #00e6f6;
+
+  --color-pink: #ff2e6e;
+  --color-pink-soft: #ff80a8;
+  --color-magenta: #b5179e;
+  --color-violet: #6a4fd1;
+  --color-orange: #f95521;
+  --color-orange-soft: #ff8a5c;
+  --color-success: #34d399;
+  --color-danger: #ff80a8;
+
+  --shadow-card: 0 8px 24px -8px rgb(0 0 0 / 0.45);
+
+  --font-sans: 'Segoe UI', system-ui, Roboto, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+}
+
+@layer base {
+  :root {
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    color: var(--color-text);
+    background: var(--color-bg);
+    color-scheme: dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-}
 
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1, h2 {
-  font-family: var(--sans);
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 48px;
-  letter-spacing: -1.2px;
-  margin: 16px 0 32px;
-  @media (max-width: 1024px) {
-    font-size: 32px;
-    margin: 12px 0 20px;
+  #root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
   }
-}
-
-p { margin: 0; }
-
-code {
-  font-family: var(--mono);
-  font-size: 15px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: var(--text-h);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-button {
-  font-family: var(--sans);
-  font-size: 16px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--accent);
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
-
-button:hover {
-  background: var(--accent);
-  color: var(--bg);
-}
-
-button:active {
-  transform: scale(0.98);
 }

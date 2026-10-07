@@ -379,3 +379,17 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - **Volver a iniciar sesión:** si `getAccessTokenSilently` falla con `login_required` o `consent_required`, `apiFetch` lanza un `ApiError` con `authRequired`. `ErrorState` ofrece entonces "Volver a iniciar sesión", que llama a `loginWithRedirect`.
 - **Alternativa descartada:** apuntar el front directo a `https://tiburonshark.me`. Es Nginx → master sin el Gateway y sin CORS.
 - **Dónde vive:** `.env.example`, `vite.config.js`, `src/api/client.js`, `src/components/ui/States.jsx`.
+
+## DF-023 — Sesión que sobrevive a recargar: refresh tokens en `localStorage`
+
+**Fecha:** 2026-10-07 · **Unidad:** V1 · **Decidió:** Pedro (pedido) + agente, a partir del testeo de punta a punta del backend
+
+- **Problema (verificado en el navegador):** con sesión iniciada, una recarga (F5) devuelve la pantalla de login. El SDK guarda el token solo en memoria y, para recuperarlo, depende de un iframe silencioso con cookies de terceros hacia `auth0.com`. En el testeo, al recargar no salió ninguna petición a Auth0 ni hubo errores en consola: la sesión se pierde en silencio. En la demo, cualquier recarga obliga a loguearse de nuevo.
+- **Decisión:**
+  - `useRefreshTokens` + `cacheLocation="localstorage"` en el `Auth0Provider`.
+  - `useRefreshTokensFallback`: mientras Auth0 no emita refresh tokens, se vuelve al iframe y nada empeora.
+  - `invalid_grant` y `missing_refresh_token` se suman a los errores que piden volver a iniciar sesión (DF-022).
+- **Costo aceptado:** un XSS podría leer el token de `localStorage`. La app no carga scripts de terceros y React escapa lo que renderiza.
+- **Alternativa descartada:** refresh tokens con caché en memoria. Renuevan el token mientras la pestaña vive, pero se pierden igual al recargar, que era el problema.
+- **Requiere en Auth0 (Jorge):** *Allow Offline Access* en la API y *Refresh Token Rotation* en la app SPA. Sin eso, Auth0 no emite el refresh token: verificado, el *scope* trae `offline_access` pero no viene `refresh_token`. Opcional: *Allow Skipping User Consent*, para que en `app.tiburonshark.me` no aparezca la pantalla de consentimiento. En `localhost` aparece siempre la primera vez.
+- **Dónde vive:** `src/auth/auth0-provider-with-navigate.jsx`, `src/api/client.js`.

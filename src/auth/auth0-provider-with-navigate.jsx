@@ -25,6 +25,14 @@ export const Auth0ProviderWithNavigate = ({ children }) => {
         redirect_uri: window.location.origin,
         audience,
       }}
+      // Sesión que sobrevive a recargar la página. Sin refresh tokens, renovar el token depende de un
+      // iframe con cookies de terceros hacia auth0.com, que Safari/Brave (y cada vez más Chrome)
+      // bloquean: se recarga y aparece deslogueado. localstorage es lo que permite recuperarlo tras
+      // recargar; el costo es que un XSS podría leerlo (no hay scripts de terceros y React escapa).
+      // Fallback al iframe mientras Auth0 no tenga Refresh Token Rotation activado.
+      useRefreshTokens
+      useRefreshTokensFallback
+      cacheLocation="localstorage"
       onRedirectCallback={onRedirectCallback}
     >
       {children}

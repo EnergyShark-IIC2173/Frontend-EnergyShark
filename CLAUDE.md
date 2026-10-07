@@ -62,7 +62,7 @@ Leer, en este orden:
 1. `docs/E1-v1.1.md` — las secciones del enunciado que toca la unidad.
 2. `docs/E1 Road Map.md` — la definición literal de la unidad y sus dependencias.
 3. `docs/00-decisiones-fundacionales.md` y `docs/adr/ADR-001..003`, **incluidos todos sus addendums**.
-4. `docs/contracts/` (schemas y `openapi.yaml`).
+4. Los contratos: repo `EnergyShark-IIC2173/contratos` (`schemas/` y `openapi.yaml`; el backend lleva una copia en `docs/contracts/`).
 5. El código de las unidades de las que depende, y los AI logs de esas unidades en `docs/ai_docs/`.
 6. `prompt/README.md`, para saber qué está hecho, en qué rama y qué quedó pendiente.
 
@@ -485,7 +485,7 @@ Antes de dar la sesión por terminada, el agente verifica y le informa al humano
 - [ ] Existe `docs/ai_docs/AAAA-MM-DD-<integrante>-<unidad>-<slug>.md`.
 - [ ] Existe un `prompt/tarea-uN/NN-<slug>.md` por subtarea, con las 11 secciones y los prompts literales.
 - [ ] `prompt/README.md` tiene la fila de la unidad en la sección del integrante.
-- [ ] Si el cambio toca la API, `docs/contracts/openapi.yaml` está actualizado (cambio aditivo).
+- [ ] Si el cambio toca la API, `openapi.yaml` está actualizado en el repo `contratos` (y en la copia del backend), con un cambio aditivo.
 - [ ] No hay secretos en lo que se va a commitear:
       `git diff --cached | grep -inE 'amqps?://[^ ]*@|password|secret|token|BEGIN .*PRIVATE KEY'`
       no devuelve nada, y no hay `.env` ni `.pem` en `git status`.

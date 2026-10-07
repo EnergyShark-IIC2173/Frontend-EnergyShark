@@ -1,4 +1,4 @@
-// Una función por endpoint de master (docs/contracts/openapi.yaml del backend). Reciben apiFetch (DF-014).
+// Una función por endpoint de master (openapi.yaml del repo EnergyShark-IIC2173/contratos). Reciben apiFetch (DF-014).
 import { buildQuery } from './client'
 
 export const getHealth = (apiFetch) => apiFetch('/health')

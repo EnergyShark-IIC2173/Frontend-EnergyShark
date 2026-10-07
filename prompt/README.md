@@ -34,3 +34,13 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 Tareas **no** ejecutadas:
 - ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.
 - ~~La integración real de V2–V5 con la API, que depende de U9 y U10 del backend.~~ **Corrección (2026-10-07):** hecha en `tarea-integracion-api/`. Quedan pendientes el POST real contra la central y el render de V3 con datos reales (ver el AI log `2026-10-07-esteban-v2-v5-integracion-api.md`).
+
+## Pedro
+
+Sesión de Claude Code (Opus 5.5, agéntico) del 2026-10-07, durante el testeo de punta a punta del
+sistema. El prompt de subtarea se escribió durante la sesión. El login de prueba lo hizo Pedro: el
+agente no escribió credenciales.
+
+| Carpeta | Unidad | Rama / PR |
+|---|---|---|
+| `tarea-sesion-auth0/` | V1.fix — sesión que sobrevive a recargar (refresh tokens) y `npm test` | `fix/auth0-sesion` (fork `Pedr0sit0s`), desde `main` |

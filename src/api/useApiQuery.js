@@ -7,7 +7,7 @@ import { useApiClient } from './client'
 // - apiFetch cambia en cada render: vive en una ref para no generar loops de requests.
 // - requestId descarta respuestas que llegan desordenadas (p. ej. al cambiar de página rápido).
 // - El polling es silencioso (no vuelve a "cargando"), se salta con la pestaña oculta y se limpia al
-//   desmontar o al cambiar pollMs.
+//   desmontar o al cambiar pollMs. pollMs puede ser una función de la data (V4: 3 s solo con filas activas).
 export function useApiQuery(fetcher, params = null, { pollMs = null, enabled = true } = {}) {
   const { apiFetch } = useApiClient()
   const { loginWithRedirect } = useAuth0()
@@ -34,17 +34,18 @@ export function useApiQuery(fetcher, params = null, { pollMs = null, enabled = t
   }, [])
 
   const key = JSON.stringify(params)
+  const interval = typeof pollMs === 'function' ? pollMs(state.data) : pollMs
   useEffect(() => {
     if (enabled) run()
   }, [enabled, run, key])
 
   useEffect(() => {
-    if (!enabled || !pollMs) return undefined
+    if (!enabled || !interval) return undefined
     const timer = setInterval(() => {
       if (!document.hidden) run({ silent: true })
-    }, pollMs)
+    }, interval)
     return () => clearInterval(timer)
-  }, [enabled, pollMs, run])
+  }, [enabled, interval, run])
 
   const reload = useCallback(() => run(), [run])
   // Para insertar de inmediato lo que devolvió un POST, sin esperar el próximo poll.

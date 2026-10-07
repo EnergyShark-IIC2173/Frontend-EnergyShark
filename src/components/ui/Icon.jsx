@@ -28,6 +28,7 @@ const paths = {
     </>
   ),
   pulse: <path d="M3 12h4l3-7 4 14 3-7h4" />,
+  chevron: <path d="m6 9 6 6 6-6" />,
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7Z" />,
   wallet: (
     <>

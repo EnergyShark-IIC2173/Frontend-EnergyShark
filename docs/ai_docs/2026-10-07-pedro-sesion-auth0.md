@@ -26,3 +26,10 @@ su usuario) y esteban. frontend es francisca y esteban.
 ## Pendiente / para coordinar
 - **Con Jorge:** en Auth0, *Allow Offline Access* (API), *Refresh Token Rotation* (SPA) y opcionalmente *Allow Skipping User Consent*.
 - **Con Francisca y Esteban:** revisar el PR.
+
+## Segunda tarea de la sesión: referencias a `contratos` (RDOC04)
+
+Prompt: "ahora estan ambos en la organzación. temrina con esa parte". Se cambiaron `AGENTS.md`,
+`CLAUDE.md` y un comentario de `src/api/endpoints.js` para que apunten al repo
+`EnergyShark-IIC2173/contratos` y a su `AGENTS.md` org-level. Detalle en `prompt/tarea-contratos-org/`.
+Verificación: lint OK, 19/19, build OK.

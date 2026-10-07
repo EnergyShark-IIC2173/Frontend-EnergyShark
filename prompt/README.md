@@ -44,3 +44,4 @@ agente no escribió credenciales.
 | Carpeta | Unidad | Rama / PR |
 |---|---|---|
 | `tarea-sesion-auth0/` | V1.fix — sesión que sobrevive a recargar (refresh tokens) y `npm test` | `fix/auth0-sesion` (fork `Pedr0sit0s`), desde `main` |
+| `tarea-contratos-org/` | RDOC04.fix — referencias al repo de contratos y al `AGENTS.md` org-level | `docs/contratos-org`, apilada sobre `fix/auth0-sesion` |

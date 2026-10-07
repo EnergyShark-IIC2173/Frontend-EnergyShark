@@ -5,7 +5,7 @@
 **Herramienta:** Claude Code (Opus 5.5), modo agéntico (edita archivos y corre comandos en el repo), extensión de VS Code, con modo plan y aprobación de Esteban en cada etapa
 **Unidad del roadmap:** V6 — Pulido: estados de carga/error, responsive. Esta sesión cubre la base de estilos (Tailwind) y todavía no los estados de carga ni de error. Prompt literal inicial: "Eres capaz de reconocer la skill actual de diseño que copie dentro de la carpeta .claude/skills?"
 **Rama:** `v6-deploy`. La sesión empezó en `main` y Esteban cambió a `v6-deploy` a mitad de la sesión (commit `5b9686f feat: ignore claude skills`); los cambios sin commitear siguieron en el working tree.
-**Referencias:** `Claude.md` (guía de documentación), `../EnergyShark/docs/E1 Road Map.md` (V1–V6), `docs/decisiones-frontend.md`, `docs/diseno-anterior.md`
+**Referencias:** `CLAUDE.md` (guía de documentación), `../EnergyShark/docs/E1 Road Map.md` (V1–V6), `docs/decisiones-frontend.md`, `docs/diseno-anterior.md`
 **Detalle por subtarea (prompts literales y resultados):** `prompt/tarea-v6-tailwind/`
 
 ## Objetivo de la sesión
@@ -31,7 +31,7 @@
 5. **Referencia del diseño anterior (V6.3).**
    - Esteban preguntó si conservar `App.css` alteraba algo. Respuesta: no, porque no se importa.
    - Decisión humana "Doc .md con todo (Recommended)" (DF-006).
-6. **Documentación (V6.4).** Esta documentación, según `Claude.md`.
+6. **Documentación (V6.4).** Esta documentación, según `CLAUDE.md`.
 
 ## Qué se construyó
 - `.claude/skills/design-taste-frontend/SKILL.md`: skill movida a la ruta correcta; sección "Marca EnergyShark" y 2 menciones a StudyLicc reemplazadas. No versionada (`.gitignore`).

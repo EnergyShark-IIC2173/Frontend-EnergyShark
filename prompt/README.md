@@ -1,6 +1,6 @@
 # prompt/ — trazabilidad de las sesiones con IA (frontend)
 
-Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Complementa los AI logs de `docs/ai_docs/` (RDOC02) y las decisiones de `docs/decisiones-frontend.md`. Formato según `Claude.md` (el mismo que usa el backend en `../EnergyShark/prompt/`).
+Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Complementa los AI logs de `docs/ai_docs/` (RDOC02) y las decisiones de `docs/decisiones-frontend.md`. Formato según `CLAUDE.md` (el mismo que usa el backend en `../EnergyShark/prompt/`).
 
 ## Esteban
 

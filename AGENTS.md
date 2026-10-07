@@ -1,12 +1,11 @@
 # AGENTS.md — frontend de EnergyShark (RDOC04)
 
 Contexto para agentes de IA y personas nuevas en **este** repo. El contexto compartido del proyecto
-(arquitectura del backend, reglas del protocolo, contratos y cómo trabajamos) vive en un solo lugar:
-**[`JorgeUribeGo/EnergyShark/AGENTS.md`](https://github.com/JorgeUribeGo/EnergyShark/blob/main/AGENTS.md)**.
-Léelo primero. Aquí solo va lo propio del frontend.
-
-> Aviso (2026-10-07): ese archivo todavía dice "Las rutas de la API no validan JWT por sí mismas".
-> Desde el PR #24 del backend, master también valida el JWT. Hay que considerar vigente lo segundo.
+(repos, contratos, reglas del protocolo, cómo trabajamos y seguridad) vive a nivel de la
+organización, en el repo de contratos:
+**[`EnergyShark-IIC2173/contratos/AGENTS.md`](https://github.com/EnergyShark-IIC2173/contratos/blob/main/AGENTS.md)**.
+Léelo primero. Aquí solo va lo propio del frontend. Lo propio del backend está en
+[`EnergyShark-IIC2173/EnergyShark/AGENTS.md`](https://github.com/EnergyShark-IIC2173/EnergyShark/blob/main/AGENTS.md).
 
 ## Qué es este repo
 
@@ -22,8 +21,8 @@ Consume la API de master a través del API Gateway (`https://api.tiburonshark.me
 | `src/components/` | vistas V2–V5 |
 | `src/components/ui/` | componentes presentacionales del diseño V6, sin hooks |
 
-**Contrato de la API:** `docs/contracts/openapi.yaml` del backend. Si la realidad difiere del
-contrato, se avisa al backend; no se parcha en el front.
+**Contrato de la API:** `openapi.yaml` del repo [`contratos`](https://github.com/EnergyShark-IIC2173/contratos).
+Si la realidad difiere del contrato, se avisa al backend; no se parcha en el front.
 
 ## Correr y probar
 
@@ -39,7 +38,7 @@ npm run lint && npm test && npm run build
 
 ## Cómo trabajamos en este repo
 
-Se siguen las reglas del `AGENTS.md` del backend. El detalle de la documentación del front está en
+Se siguen las reglas del `AGENTS.md` org-level (repo `contratos`). El detalle de la documentación del front está en
 **`CLAUDE.md`** de este repo. En resumen:
 
 1. **Decisiones antes que el código (RDOC01).** Las decisiones de frontend van en

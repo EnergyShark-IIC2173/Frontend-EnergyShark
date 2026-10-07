@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useApiClient } from './api/client'
+import { getHealth } from './api/endpoints'
 import { LoginButton } from './components/LoginButton'
 import { LogoutButton } from './components/LogoutButton'
 import { CycleHistory } from './components/CycleHistory'
@@ -23,8 +24,9 @@ function App() {
     setError(null)
     setHealthStatus(null)
     try {
-      const data = await apiFetch('/health')
-      setHealthStatus(JSON.stringify(data))
+      const data = await getHealth(apiFetch)
+      // master responde texto plano "ok"; el contrato promete JSON (DF-018): se muestran ambos.
+      setHealthStatus(typeof data === 'string' ? data : JSON.stringify(data))
     } catch (err) {
       setError(err.message)
     }

@@ -3,6 +3,7 @@ const tones = {
   pink: 'bg-pink/15 text-pink-soft',
   orange: 'bg-orange/15 text-orange-soft',
   success: 'bg-success/15 text-success',
+  violet: 'bg-violet/25 text-text-h',
   neutral: 'bg-white/10 text-text-h',
 }
 

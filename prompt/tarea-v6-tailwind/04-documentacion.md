@@ -1,7 +1,7 @@
 # V6.4 — Documentación de la sesión (decisiones, AI log y prompts)
 
 ## Objetivo
-Documentar el refactor a Tailwind según la guía del equipo (`Claude.md`), para RDOC01 y RDOC02:
+Documentar el refactor a Tailwind según la guía del equipo (`CLAUDE.md`), para RDOC01 y RDOC02:
 - las decisiones de frontend;
 - los prompts literales de Esteban;
 - un resumen de lo que desarrolló el agente.

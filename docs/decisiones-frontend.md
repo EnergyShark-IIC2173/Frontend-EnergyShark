@@ -224,3 +224,158 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 - **Assets sin referencias** (`grep -rnE` en `src`, `index.html` y `vite.config.js`): `src/assets/hero.png`, `react.svg`, `vite.svg` y `public/icons.svg`.
   - Solo se reportan; no se borran.
   - En uso: `tiburon.png` (`App.jsx`) y `favicon.svg` (`index.html`).
+
+---
+
+> Las decisiones DF-014 a DF-022 se escribieron el 2026-10-07, **antes** de implementar la integración con la API real, en su propio commit (RDOC01). Plan aprobado por Esteban con ajustes; detalle en `prompt/tarea-integracion-api/`. Las formas de las respuestas se verificaron contra el código de `JorgeUribeGo/EnergyShark` en `origin/main` (`c58ccbd`), no solo contra el informe `docs/integracion-backend.md`.
+
+## DF-014 — Hook propio `useApiQuery` y `src/api/endpoints.js`, sin react-query
+
+**Fecha:** 2026-10-07 · **Unidad:** V2–V5 (integración) · **Decidió:** Esteban (restricción: sin dependencias nuevas) + agente (diseño del hook)
+
+- **Contexto:**
+  - Las 4 vistas leían `src/mocks/*.json`.
+  - `useApiClient().apiFetch` crea una función nueva en cada render. Si se usa directo en un `useEffect`, dispara requests en loop.
+  - `eslint-plugin-react-hooks` 7 prohíbe escribir refs durante el render.
+- **Decisión:**
+  - `src/api/endpoints.js`: una función por endpoint, que recibe `apiFetch`.
+  - `src/api/useApiQuery.js` devuelve `{ data, loading, error, reload }`, con `pollMs` y `enabled` opcionales.
+  - `apiFetch` y `fetcher` viven en refs que se sincronizan en `useLayoutEffect`.
+  - Un contador de requests descarta las respuestas que llegan desordenadas, por ejemplo al cambiar de página rápido.
+  - La lógica pura (formatos, tope, capacidad, ventana) va en `src/lib/`, con tests `node --test`.
+- **Alternativa descartada:**
+  - `@tanstack/react-query` o SWR: dependencia nueva, prohibida sin aprobación.
+  - `fetch` suelto en cada componente: repite los estados de carga y error 4 veces y es fácil equivocarse con el cleanup.
+- **Dónde vive:** `src/api/endpoints.js`, `src/api/useApiQuery.js`, `src/lib/`.
+
+## DF-015 — Polling e intervalos
+
+**Fecha:** 2026-10-07 · **Unidad:** V2–V5 · **Decidió:** Esteban (rangos del pedido) + agente (valores exactos)
+
+- **Contexto:** el backend no tiene WebSocket ni SSE. RF01, RF02, RF04 y RF05 piden ver los cambios sin recargar la página, y en la demo el ayudante inyecta duplicados.
+- **Decisión:**
+
+| Vista | Intervalo | Condición |
+|---|---|---|
+| V5 rechazados | 15 s | siempre, más el botón "Actualizar" |
+| V2 historial | 30 s | solo en la página 1 |
+| V4 listado | 3 s | solo si hay filas visibles en `proposed` o `confirmed`; si no, sin polling |
+| V4 ciclo abierto del formulario | 30 s | siempre, para habilitar el formulario cuando abre la ventana |
+| V3 conectividad | 60 s | siempre, más el botón "Actualizar" |
+
+  - El polling es silencioso: no vuelve a mostrar el estado de carga.
+  - Se salta el tick si la pestaña está oculta (`document.hidden`).
+  - El intervalo se limpia al desmontar o al cambiar de parámetros.
+- **Alternativa descartada:** WebSocket o SSE, que el backend no expone. Un intervalo único global: V4 necesita 3 s y V3 no.
+- **Dónde vive:** `src/api/useApiQuery.js` (`pollMs`) y cada vista.
+
+## DF-016 — El 404 de `/api/distance-table` es un estado informativo
+
+**Fecha:** 2026-10-07 · **Unidad:** V3 · **Decidió:** Esteban (pedido) + agente
+
+- **Contexto:** `GET /api/distance-table` está en `main` del backend (PR #20), pero mergeado no es lo mismo que desplegado. Hasta el redeploy del EC2, producción puede responder 404.
+- **Decisión:**
+  - `error.status === 404` → estado informativo neutro, "Sin datos o endpoint aún no desplegado", no un error rojo.
+  - `cityId`/`updatedAt` null o `distances: {}` → estado vacío.
+  - Cualquier otro error → `ErrorState` con "Reintentar".
+- **Alternativa descartada:** mostrar el 404 como error. En la demo se leería como una falla del frontend.
+- **Dónde vive:** `src/components/DistanceTable.jsx`.
+
+## DF-017 — Validación de la propuesta en el cliente
+
+**Fecha:** 2026-10-07 · **Unidad:** V4 · **Decidió:** Esteban (humana: la capacidad solo advierte) + agente (reglas)
+
+- **Contexto:**
+  - La validación final es del backend y del connector: `negotiation.js` → `localRejection`.
+  - Una propuesta que supera el tope o la capacidad se registra igual (201) y después termina en `rejected`, con `PRICE_ABOVE_CAP` u `OVER_CAPACITY`.
+- **Decisión:**
+  - `quantity` y `pricePerEnergy` tienen que ser números mayores que 0, y se envían con `Number()`.
+  - **El tope bloquea:** `cap = round2(1.05 × generationCost)` del ciclo abierto. Es la misma regla exacta del connector.
+  - **La capacidad del give advierte y permite enviar.**
+    - `spare ≈ max(0, generationCapacity − consumption) − Σ quantity` de los give del ciclo en `proposed`, `confirmed` o `paid`.
+    - Es una estimación más conservadora que la del connector, que no cuenta los `requested` y usa la energía confirmada por la central.
+  - **Decisión humana:** "Advertir y permitir (Recommended)".
+- **Alternativa descartada:** bloquear también por capacidad. Podría impedir un give válido en un caso borde.
+- **Dónde vive:** `src/lib/negotiation.js` (con tests) y `src/components/NegotiationAdmin.jsx`.
+
+## DF-018 — `/health` en texto plano
+
+**Fecha:** 2026-10-07 · **Unidad:** V1 (card de estado) · **Decidió:** Esteban (no parchar el contrato desde el front) + agente
+
+- **Contexto:** master responde `200 ok` en `text/plain` (`app.js`), pero `openapi.yaml` promete JSON `{status, dbConnected, brokerConnected}`. El cliente anterior siempre hacía `res.json()`, así que fallaba.
+- **Decisión:**
+  - `apiFetch` lee el cuerpo según `content-type`: JSON si es `application/json` y texto en cualquier otro caso. Un 204 o un cuerpo vacío se leen como `null`.
+  - La card muestra el texto tal cual, o el JSON serializado si algún día cambia.
+  - La discrepancia con el contrato se reporta al backend como hallazgo y no se parcha en el front.
+- **Alternativa descartada:** pedirle al backend que cambie `/health` a JSON antes de integrar. Bloquea la integración el día de la entrega.
+- **Dónde vive:** `src/api/client.js`, `src/App.jsx` (`checkHealth`).
+
+## DF-019 — Qué se muestra cuando un campo viene null
+
+**Fecha:** 2026-10-07 · **Unidad:** V2–V5 · **Decidió:** Esteban (textos del pedido) + agente
+
+- **Contexto:** varios campos son nullables según el código de master y el contrato.
+- **Decisión:**
+
+| Campo | Se muestra |
+|---|---|
+| `statusStatement` null | "Sin status-statement" (y no hay tope ni capacidad para V4) |
+| `negotiationReportSent` null y ciclo en `negotiating` con `windowClosesAt` futuro | "Pendiente" (neutral) |
+| `negotiationReportSent` null en cualquier otro caso | "Reporte no enviado" (rosa: implica la multa del próximo budget) |
+| `finalBalances.*`, `lastOperationApplied`, `windowOpensAt/ClosesAt`, `settledPricePerEnergy`, `type`, `msgId`, `idpk`, `reason`, `code` null | "—" |
+
+- **Alternativa descartada:** ocultar las secciones vacías. RF01 pide que se vea explícitamente si hubo o no reporte y status-statement.
+- **Dónde vive:** `src/lib/format.js`, `src/lib/status.js` y las vistas.
+
+## DF-020 — Layout de V2 y `lastOperationApplied` destacada
+
+**Fecha:** 2026-10-07 · **Unidad:** V2 (RF01) · **Decidió:** Esteban (humana: layout y regla de la cabecera) + agente (heurística)
+
+- **Contexto:**
+  - Cada ciclo real tiene 7 bloques. Con `limit=10`, mostrarlos todos abiertos deja una página muy larga.
+  - RF01 exige identificar claramente la última operación aplicada.
+  - `lastOperationApplied.appliedAt` es la hora del evento del ledger. En give y take **no coincide al milisegundo** con el `paidAt` de la negociación: en un ciclo real, `.181` contra `.184`.
+- **Decisión:**
+  - **Decisión humana:** "1ª abierta, resto plegable (Recommended)". Se usa `<details>/<summary>` nativo, sin estado nuevo.
+  - Secciones separadas:
+    - status-statement;
+    - fondos por transfer;
+    - demand-statements, con signo;
+    - negociaciones voluntarias;
+    - negotiation-report enviado;
+    - balances finales.
+  - `lastOperationApplied` va **siempre** visible en la cabecera de cada ciclo, abierto o plegado, con tipo y hora. No depende de ningún emparejamiento.
+  - Marcar el ítem en su sección es una **heurística de mejor esfuerzo**:
+    - `transfer` y `demand-statement`: igualdad exacta de `appliedAt`/`receivedAt`, porque ambos salen del mismo evento;
+    - `give` y `take`: la negociación `paid` de esa dirección con el `paidAt` más cercano.
+
+    Si no hay coincidencia, no se marca nada y la cabecera sigue mostrando la operación.
+- **Alternativa descartada:**
+  - Todas las tarjetas abiertas.
+  - Pedir `GET /api/cycles/:id` al expandir: el listado ya trae el objeto completo.
+- **Dónde vive:** `src/components/CycleHistory.jsx`, `src/lib/cycles.js` (`matchLastOperation`, con tests).
+
+## DF-021 — Ciclo abierto y próxima ventana estimada desde los datos
+
+**Fecha:** 2026-10-07 · **Unidad:** V4 (RF04) · **Decidió:** Esteban (nunca hardcodeada) + agente (fórmula)
+
+- **Contexto:** el backend no tiene endpoint de "ciclo actual".
+- **Decisión:**
+  - **Ciclo abierto:** el primero de `GET /api/cycles?limit=5` con `phase === 'negotiating'`, `windowClosesAt` futuro y `statusStatement` presente.
+  - **Si no hay ciclo abierto, el formulario se deshabilita y se muestra la próxima ventana estimada:**
+    - período = mediana de las diferencias entre `windowOpensAt` consecutivos de los ciclos listados;
+    - próxima = último `windowOpensAt` + k·período, la primera mayor que ahora;
+    - con menos de 2 ciclos con ventana, se muestra "no estimable".
+- **Alternativa descartada:** hardcodear "cada 2 h a las HH:40 UTC". Se rompe con `CYCLE_TIME_SCALE` en local o si la central cambia el ritmo.
+- **Dónde vive:** `src/lib/cycles.js` (`findOpenCycle`, `estimateNextWindow`, con tests).
+
+## DF-022 — `.env.example`, proxy de Vite y volver a iniciar sesión
+
+**Fecha:** 2026-10-07 · **Unidad:** V1–V5 · **Decidió:** Esteban (pedido) + agente
+
+- **Decisión:**
+  - **`.env.example`:** las 4 `VITE_*` (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_AUDIENCE`, `API_BASE_URL`) **sin valores**.
+  - **Proxy de Vite:** `server.proxy` de `/api` y `/health` → `http://localhost:3001` (master local). Solo se usa si `VITE_API_BASE_URL` está vacío. Contra producción no interviene, porque las URLs son absolutas.
+  - **Volver a iniciar sesión:** si `getAccessTokenSilently` falla con `login_required` o `consent_required`, `apiFetch` lanza un `ApiError` con `authRequired`. `ErrorState` ofrece entonces "Volver a iniciar sesión", que llama a `loginWithRedirect`.
+- **Alternativa descartada:** apuntar el front directo a `https://tiburonshark.me`. Es Nginx → master sin el Gateway y sin CORS.
+- **Dónde vive:** `.env.example`, `vite.config.js`, `src/api/client.js`, `src/components/ui/States.jsx`.

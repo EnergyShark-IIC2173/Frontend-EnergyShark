@@ -1,8 +1,0 @@
-{
-  "cityId": "COR",
-  "updatedAt": "2026-09-24T10:00:00Z",
-  "distances": {
-    "HGW": { "distance": 62763183, "transportCost": 0.0034, "enabled": true },
-    "TAR": { "distance": 94306517, "transportCost": 0.0013, "enabled": true }
-  }
-}

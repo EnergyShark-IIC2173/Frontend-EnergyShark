@@ -45,3 +45,4 @@ agente no escribió credenciales.
 |---|---|---|
 | `tarea-sesion-auth0/` | V1.fix — sesión que sobrevive a recargar (refresh tokens) y `npm test` | `fix/auth0-sesion` (fork `Pedr0sit0s`), desde `main` |
 | `tarea-contratos-org/` | RDOC04.fix — referencias al repo de contratos y al `AGENTS.md` org-level | `docs/contratos-org`, apilada sobre `fix/auth0-sesion` |
+| `tarea-readme-front/` | Docs — README del frontend y guía de deploy S3 + CloudFront | `docs/readme-front` (fork `Pedr0sit0s`), desde `main` |

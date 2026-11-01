@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { listCycles } from '../api/endpoints'
 import { useApiQuery } from '../api/useApiQuery'
 import { CurrentCycleCard, CycleTile } from './cycles/CycleCards'
 import { CycleDialog } from './cycles/CycleDialog'
-import { Pagination } from './ui/Pagination'
+import { CyclePager } from './cycles/CyclePager'
+import { CycleSearch } from './cycles/CycleSearch'
+import { neighbor } from '../lib/pagination'
+import { Icon } from './ui/Icon'
+import { btnSecondary } from './ui/classes'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
 
@@ -31,6 +35,40 @@ export function CycleHistory() {
   )
   const cycles = data?.data ?? []
   const open = (cycleId) => (origin) => setSelected({ cycleId, origin })
+  const gridRef = useRef(null)
+  // Al pasar de página desde el diálogo se abre el primer o el último ciclo de la nueva página cuando llega.
+  const [pendingEdge, setPendingEdge] = useState(null)
+  if (pendingEdge && data?.page === page && cycles.length > 0) {
+    const target = pendingEdge === 'first' ? cycles[0] : cycles[cycles.length - 1]
+    setPendingEdge(null)
+    setSelected({ cycleId: target.cycleId, origin: null })
+  }
+
+  // Cambiar de página sube al inicio de la grilla y le pasa el foco, así el paginador de abajo no te deja al fondo (DF-033).
+  function goToPage(next, { scroll = true } = {}) {
+    setPage(next)
+    if (!scroll) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+    gridRef.current?.focus({ preventScroll: true })
+  }
+
+  // Anterior/siguiente dentro del diálogo, cruzando de página en los bordes.
+  const index = selected ? cycles.findIndex((c) => c.cycleId === selected.cycleId) : -1
+  const neighborOf = (dir) => (index >= 0 && data ? neighbor(index, cycles.length, page, data.totalPages, dir) : null)
+  const hasPrev = Boolean(neighborOf(-1))
+  const hasNext = Boolean(neighborOf(1))
+  function move(dir) {
+    const n = neighborOf(dir)
+    if (!n) return
+    if (n.index !== undefined) {
+      const id = cycles[n.index].cycleId
+      setSelected({ cycleId: id, origin: document.querySelector(`[data-cycle-id="${id}"]`) })
+    } else {
+      setPendingEdge(n.edge)
+      goToPage(n.page, { scroll: false })
+    }
+  }
 
   let content
   if (!data && loading) content = <LoadingState label="Cargando ciclos…" />
@@ -42,7 +80,7 @@ export function CycleHistory() {
     const featured = page === 1
     content = (
       <>
-        <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${featured ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
+        <div ref={gridRef} tabIndex={-1} aria-label={`Ciclos, página ${page}`} role="region" className={`grid grid-cols-1 gap-4 outline-none md:grid-cols-2 ${featured ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
           {featured ? (
             <CurrentCycleCard key={first.cycleId} cycle={first} onOpen={open(first.cycleId)} {...enter(0)} className={`md:col-span-2 xl:row-span-2 ${enter(0).className}`} />
           ) : (
@@ -52,7 +90,7 @@ export function CycleHistory() {
             <CycleTile key={cycle.cycleId} cycle={cycle} onOpen={open(cycle.cycleId)} {...enter(i + 1)} />
           ))}
         </div>
-        <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={setPage} disabled={loading} />
+        <CyclePager label="Paginación de ciclos, abajo" page={data.page} totalPages={data.totalPages} total={data.total} onChange={goToPage} disabled={loading} />
       </>
     )
   }
@@ -65,6 +103,18 @@ export function CycleHistory() {
       >
         <RefreshButton onClick={reload} loading={loading} />
       </ViewHeader>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start gap-2">
+          <CycleSearch onFound={(id, form) => setSelected({ cycleId: id, origin: form })} />
+          {page > 1 ? (
+            <button type="button" onClick={() => goToPage(1)} className={btnSecondary}>
+              <Icon name="first" className="size-4" />
+              Volver al ciclo actual
+            </button>
+          ) : null}
+        </div>
+        {data ? <CyclePager page={data.page} totalPages={data.totalPages} total={data.total} onChange={goToPage} disabled={loading} /> : null}
+      </div>
       <StaleNotice error={data ? error : null} />
       {content}
       {selected ? (
@@ -72,6 +122,10 @@ export function CycleHistory() {
           cycleId={selected.cycleId}
           origin={selected.origin}
           live={page === 1 && selected.cycleId === cycles[0]?.cycleId}
+          position={index >= 0 && data ? (page - 1) * LIMIT + index + 1 : null}
+          total={data?.total}
+          onPrev={hasPrev ? () => move(-1) : null}
+          onNext={hasNext ? () => move(1) : null}
           onClose={() => setSelected(null)}
         />
       ) : null}

@@ -128,7 +128,7 @@ export function CycleTile({ cycle, onOpen, style, className = '' }) {
       </span>
       <span className="flex flex-wrap gap-1.5">
         <ReportBadge cycle={cycle} />
-        {cycle.counts ? <Badge tone={cycle.counts.swapsSettled > 0 ? 'active' : 'neutral'}>{cycle.counts.swapsSettled} swaps</Badge> : null}
+        {cycle.counts ? <Badge tone={cycle.counts.swapsSettled > 0 ? 'active' : 'neutral'}>{cycle.counts.swapsSettled} {cycle.counts.swapsSettled === 1 ? 'swap' : 'swaps'}</Badge> : null}
       </span>
       <span className="mt-auto block border-t border-sand-200 pt-3 dark:border-sand-800">
         <span className={`block text-xs ${textSecondary}`}>Créditos al cierre</span>

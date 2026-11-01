@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useApiClient } from './api/client'
 import { getHealth } from './api/endpoints'
@@ -12,12 +12,40 @@ import { Logo, LogoMark } from './components/ui/Logo'
 import { LoadingDot } from './components/ui/States'
 import { textPrimary, textSecondary } from './components/ui/classes'
 
+const SIDEBAR_KEY = 'energyshark-sidebar'
+
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
   const { apiFetch } = useApiClient()
   const [healthStatus, setHealthStatus] = useState(null)
   const [error, setError] = useState(null)
   const [activeView, setActiveView] = useState('history')
+  // Sidebar plegada desde md (se recuerda) y cajón abierto bajo md (DF-032).
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === 'collapsed'
+    } catch {
+      return false
+    }
+  })
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const closeMobile = useCallback(() => setMobileOpen(false), [])
+
+  function toggleSidebar() {
+    setCollapsed((value) => {
+      try {
+        localStorage.setItem(SIDEBAR_KEY, value ? 'expanded' : 'collapsed')
+      } catch {
+        // Sin almacenamiento: el estado dura hasta recargar.
+      }
+      return !value
+    })
+  }
+
+  function selectView(view) {
+    setActiveView(view)
+    setMobileOpen(false)
+  }
 
   async function checkHealth() {
     setError(null)
@@ -59,8 +87,13 @@ function App() {
     <div className="min-h-svh bg-paper md:flex dark:bg-ink">
       <Sidebar
         activeView={activeView}
-        onSelect={setActiveView}
+        onSelect={selectView}
         health={{ onCheck: checkHealth, status: healthStatus, error }}
+        collapsed={collapsed}
+        onToggle={toggleSidebar}
+        mobileOpen={mobileOpen}
+        onMobileOpen={() => setMobileOpen(true)}
+        onMobileClose={closeMobile}
       />
 
       {/* Fondo plano: más serio para un dashboard (DF-032) */}

@@ -1,10 +1,12 @@
+import { SeaBackground } from './SeaBackground'
 import { surface } from './classes'
 
-// Login y "Cargando Auth0...": papel cuadriculado y una tarjeta opaca encima, sin degradado ni sombra (DF-030).
+// Login: un mar de olas en movimiento detrás de una tarjeta opaca, sin degradados ni sombras (DF-030, DF-035).
 export function AuthScreen({ children }) {
   return (
-    <main className="grid min-h-svh place-items-center bg-paper p-4 grid-lines dark:bg-ink">
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center sm:p-10 motion-safe:animate-pop-in motion-reduce:animate-fade-in ${surface}`}>
+    <main className="relative grid min-h-svh place-items-center overflow-hidden bg-paper p-4 dark:bg-ink">
+      <SeaBackground />
+      <div className={`relative w-full max-w-sm rounded-2xl p-8 text-center sm:p-10 motion-safe:animate-pop-in motion-reduce:animate-fade-in ${surface}`}>
         {children}
       </div>
     </main>

@@ -44,7 +44,7 @@ export function CycleHistory() {
     content = (
       <>
         {cycles.map((cycle, i) => (
-          <CycleCard key={cycle.cycleId} cycle={cycle} defaultOpen={i === 0} live={page === 1 && i === 0} enterDelay={i * STAGGER_MS} />
+          <CycleCard key={cycle.cycleId} cycle={cycle} highlight={i === 0} live={page === 1 && i === 0} enterDelay={i * STAGGER_MS} />
         ))}
         <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={setPage} disabled={loading} />
       </>
@@ -93,13 +93,14 @@ function WindowLine({ cycle }) {
   )
 }
 
-function CycleCard({ cycle, defaultOpen, live, enterDelay = 0 }) {
-  const [open, setOpen] = useState(defaultOpen)
+// Todas parten cerradas, también la primera (DF-032): el más reciente solo se destaca con el borde.
+function CycleCard({ cycle, highlight, live, enterDelay = 0 }) {
+  const [open, setOpen] = useState(false)
   const last = cycle.lastOperationApplied
   const counts = cycle.counts
 
   return (
-    <Card highlight={defaultOpen} className="motion-safe:animate-rise-in motion-reduce:animate-fade-in" style={{ animationDelay: `${enterDelay}ms` }}>
+    <Card highlight={highlight} className="motion-safe:animate-rise-in motion-reduce:animate-fade-in" style={{ animationDelay: `${enterDelay}ms` }}>
       {/* Cabecera siempre visible: RF01 exige identificar la última operación aplicada (DF-020). */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">

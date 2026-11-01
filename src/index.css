@@ -122,19 +122,6 @@
     }
   }
 
-  /* Borde del botón de login (DF-035): un tramo de trazo (pathLength 1) recorre el perímetro, como el "dock trace"
-     de StudyLicc. stroke-dashoffset es la excepción documentada para trazos SVG. */
-  --animate-border-run: border-run 3s linear infinite;
-
-  @keyframes border-run {
-    from {
-      stroke-dashoffset: 1;
-    }
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-
   /* Fondo del login (DF-036): vaivén vertical lento de cada ola. */
   --animate-sea-bob: sea-bob 9s ease-in-out infinite;
 

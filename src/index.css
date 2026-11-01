@@ -135,6 +135,19 @@
     }
   }
 
+  /* Fondo del login (DF-036): vaivén vertical lento de cada ola. */
+  --animate-sea-bob: sea-bob 9s ease-in-out infinite;
+
+  @keyframes sea-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-7px);
+    }
+  }
+
   @keyframes rise-in {
     from {
       opacity: 0;

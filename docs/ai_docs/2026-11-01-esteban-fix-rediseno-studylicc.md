@@ -381,3 +381,41 @@ vistas.
   - Va de derecha a izquierda, en claro y en oscuro.
 - Con "Reducir movimiento" el tiburón no se muestra y nada se anima.
 - **No verificado:** cómo se siente el movimiento en vivo (las capturas son estáticas); Safari y Firefox.
+
+---
+
+## Séptima vuelta (misma fecha): el tiburón como easter egg y el botón sin borde animado (DF-037)
+
+**Prompt literal:** en `prompt/tarea-fix-rediseno-studylicc/12-easter-egg.md`.
+
+### Commits
+
+| Pedido | Commit |
+|---|---|
+| DF-037, antes del código | `2041771` |
+| El tiburón aparece solo al apretar la aleta del logo, en el tono del fondo | `f245262` |
+| Botón "Iniciar sesión" sin animación de borde (borde verde quieto) | `8f9de82` |
+
+### Qué se construyó
+- **`src/hooks/sharkSwim.js`:** un contexto entre el logo y el fondo (`swimming`, `swims`, `start`, `finish`), con su proveedor en `AuthScreen`.
+- **`WaterMark`:**
+  - la aleta es un `<button>` ("Hacer nadar al tiburón"), deshabilitado mientras el tiburón nada;
+  - se sumerge (`fin-dive`) y vuelve a asomar (`fin-rise`) al terminar.
+- **`SeaBackground`:**
+  - el tiburón cruza una vez (`shark-swim`, 9 s), en `sand-300` en claro y `sand-700` en oscuro, sobre la quinta ola y meciéndose con ella;
+  - avisa con `finish()` al terminar, con un timeout de respaldo de 11 s.
+  - Con "Reducir movimiento" solo aparece y se va con un fundido.
+- Se quitaron el cruce automático de DF-036 y el trazo del borde de DF-035, con sus keyframes.
+
+### Hallazgo
+- **Contador de nados doble:** `finish` llamaba a `setSwims` dentro del updater de `setSwimming`, y en StrictMode cuenta dos veces. Se simplificó a dos llamadas directas; `finish` corre una sola vez porque el tiburón se desmonta al terminar.
+
+### Verificación
+- `npm run lint` sin errores, **28/28** tests y build en verde.
+- **Antes del clic:** no hay tiburón.
+- **Tras el clic:**
+  - la aleta del logo queda en opacidad 0 y el botón se deshabilita;
+  - el tiburón avanza x 954, 704, 451, 201 cada 1,6 s (de derecha a izquierda), en claro y en oscuro.
+- **Al terminar:** no hay tiburón, la aleta vuelve a opacidad 1 y el botón se habilita.
+- **Login en claro, oscuro, 390 px y con reduce:** solo `sea-bob` y `wave-run`, sin `border-run`; sin scroll horizontal.
+- **No verificado:** login real, Safari y Firefox.

@@ -49,6 +49,7 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 - Cuarta vuelta (`09`): TiburonShark, aleta hacia la izquierda, paginador único y reloj; DF-034 antes del código y un commit por pedido.
 - Quinta vuelta (`10`): login en movimiento; DF-035 antes del código y un commit por pedido. Esteban eligió el fondo "Mar de olas" entre cuatro opciones.
 - Sexta vuelta (`11`): olas más orgánicas y un tiburón ocasional en el login; DF-036 antes del código.
+- Séptima vuelta (`12`): el tiburón pasa a easter egg de la aleta del logo y el botón de login pierde el borde animado; DF-037 antes del código.
 
 Tareas **no** ejecutadas:
 - ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.

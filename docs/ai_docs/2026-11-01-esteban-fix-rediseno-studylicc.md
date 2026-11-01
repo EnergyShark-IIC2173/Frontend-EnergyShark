@@ -109,3 +109,77 @@ vistas.
 ## Fuera de alcance
 - Relayout de las vistas (grillas asimétricas): Esteban eligió solo piel y shell.
 - La librería `motion`, el hero y otras piezas de StudyLicc que no aplican a un dashboard.
+
+---
+
+## Segunda vuelta (misma fecha): sidebar, menú de cuenta y ciclos (DF-032)
+
+**Prompt literal:** en `prompt/tarea-fix-rediseno-studylicc/07-segunda-vuelta.md`. Esteban pidió además "un commit sin coautorizador como siempre por cada cambio que te pedi".
+
+### Flujo de trabajo
+1. **Docs antes que el código:** DF-032 y el ajuste de `docs/design/sistema-visual.md`, commit `2c6f582`.
+2. **Un commit por pedido:**
+
+| Pedido | Commit |
+|---|---|
+| Entrada escalonada de los ciclos (fade in hacia arriba) | `acc88e0` |
+| El primer ciclo no se abre solo | `9a22d88` |
+| Fondo plano, sin puntos | `850740c` |
+| Foto y nombre en vez de "Sesión iniciada como" + tema y cuenta al pie de la sidebar con menú de "Cerrar sesión" | `9ea5ba1` |
+| Sidebar fija, plegable con animación lateral (y cajón en el celular) | `ed79711` |
+| Un solo ciclo abierto; se abre apretando la tarjeta y se cierra apretando afuera | `c41e769` |
+| Botón de detalle destacado abajo a la derecha, que baja al final y cambia de color para cerrar | `aad290f` |
+
+   El pedido 4 (foto en vez del correo) y el de la cuenta al pie de la sidebar fueron un solo commit: son el mismo componente (`UserMenu`), y hacerlos por separado obligaba a armar un header que el commit siguiente borraba.
+
+### Qué se construyó
+- `src/components/Sidebar.jsx` (nuevo):
+  - logo arriba y botón para plegar;
+  - secciones;
+  - prueba de /health, que en el riel queda como ícono con un punto de color;
+  - al pie, el tema y la cuenta;
+  - desde `md` es fija y plegable con `transition-[width]` de 250 ms (excepción documentada en DF-032);
+  - bajo `md` es un cajón con `translate-x`, velo, Escape e `inert` cuando está cerrado.
+- `src/components/ui/UserMenu.jsx` y `ui/Avatar.jsx` (nuevos) y `src/lib/user.js` con tests:
+  - foto de Auth0 o iniciales;
+  - nombre sin correo (si `name` es un correo se usa `nickname`);
+  - menú con "Cerrar sesión" que se cierra con Escape o apretando afuera.
+- `src/hooks/useMediaQuery.js` (nuevo), con `useSyncExternalStore`.
+- `src/components/ui/ThemeSwitch.jsx`: fila completa y modo `compact` para el riel.
+- `src/components/CycleHistory.jsx`:
+  - `openId` en el listado y `<details>` reemplazado por un botón con `aria-expanded`/`aria-controls`;
+  - clic en la tarjeta cerrada y clic afuera;
+  - scroll al inicio de la tarjeta si quedó fuera de la pantalla;
+  - entrada `rise-in` con 70 ms entre tarjetas.
+- `src/App.jsx`: sin header y con el estado de la sidebar (recordado en `localStorage`). Se borra `src/components/LogoutButton.jsx`.
+
+### Hallazgos / Errores encontrados y corregidos
+- **Texto con opacidad 0 en el riel:** seguía ocupando ancho y empujaba el switch fuera. En modo compacto los textos pasan a `sr-only`, que no ocupa espacio y conserva el nombre accesible.
+- **Menú de cuenta detrás de las tarjetas:** en el riel quedaba tapado porque la sidebar no tenía `z-index` en escritorio. Se pasó a `md:z-30` (lo vio la captura `s-rail-menu`).
+- **Colores de botón que compiten:** construir "Cerrar detalle" sobre `btnSecondary` dejaba dos fondos y en Tailwind no se sabe cuál gana. Se exportó `btnBase` desde `classes.js`.
+- **Exports que no son componentes:** el lint (`react-refresh/only-export-components`) marcó `displayName` y `NAV_ITEMS`. Se movieron a `src/lib/user.js` o se dejaron sin exportar.
+
+### Verificación
+- `npm run lint` sin errores.
+- `npx -y node@22 --test "src/lib/*.test.js"` → **21/21** (19 + 2 de `user.js`).
+- `npm run build` en verde; los mocks no entran al build.
+- Harness de la sesión, fuera del repo (stub de Auth0 con nombre, Chrome headless):
+  - **Sidebar fija:** con scroll, su `top` sigue en 0 y su alto es el de la pantalla (900 px).
+  - **Riel:** mide 72 px y se mantiene tras recargar.
+  - **Menú de cuenta:** lleva el foco a "Cerrar sesión"; Escape lo cierra y devuelve el foco al botón.
+  - **Celular (375 px):** el cajón está `inert` cerrado, entra con el botón de menú, sale con Escape y no hay scroll horizontal.
+  - **Ciclos:** parten todos cerrados.
+    - Apretar la 2.ª abre solo esa; apretar la 1.ª cierra la 2.ª y abre la 1.ª.
+    - Apretar afuera cierra.
+    - Con teclado, Enter abre y cierra.
+    - Con la 1.ª abierta y la página al fondo, apretar la 3.ª deja la 3.ª visible (`top` 677 px de 900).
+    - Cerrar desde el botón al final vuelve al inicio de la tarjeta.
+  - **Regresión:** se repitieron las capturas de las 3 vistas en claro y oscuro a 1280 y 375 px y las pruebas de tema, foco y movimiento reducido. Todo igual que antes.
+- **No verificado:**
+  - con el login real (foto real de Google/Auth0);
+  - Safari y Firefox;
+  - la animación de entrada y la del riel a la vista: las capturas son estáticas.
+
+### Pendiente
+- Esteban: probar con su login. Push y PR cuando lo confirme.
+- El login sigue con `grid-lines`: el pedido fue quitar los puntos del área principal. Si quieres el login liso, es un cambio de una línea.

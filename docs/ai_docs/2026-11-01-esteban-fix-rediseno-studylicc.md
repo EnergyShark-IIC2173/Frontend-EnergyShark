@@ -345,3 +345,39 @@ vistas.
 - **Login en claro, oscuro y 390 px:** corren 7 `wave-run` (6 de fondo y 1 del logo) y 1 `border-run`; sin scroll horizontal ni errores.
 - **Con "Reducir movimiento":** ninguna animación activa, y el borde del botón queda verde completo.
 - **No verificado:** login real, Safari y Firefox (soporte de `width="calc(...)"` en el `rect` SVG).
+
+---
+
+## Sexta vuelta (misma fecha): olas más orgánicas y un tiburón ocasional (DF-036)
+
+**Prompt literal:** en `prompt/tarea-fix-rediseno-studylicc/11-olas-y-tiburon.md`.
+
+### Commits
+
+| Pedido | Commit |
+|---|---|
+| DF-036, antes del código | `d6512ca` |
+| Olas con crestas irregulares, vaivén vertical y línea de eco | `85efa8c` |
+| Un tiburón cruza el fondo de vez en cuando | `f46ddbd` |
+
+### Qué se construyó
+- **`src/lib/waves.js` (`wavePath`), con 2 tests:** trazo de ola con crestas irregulares que se repite un número par de veces, así el bucle no salta.
+- **`SeaBackground`:**
+  - seis capas, cada una con su patrón, su avance horizontal y su vaivén vertical (`sea-bob`), más una línea de eco tenue;
+  - el tiburón: la aleta del isotipo con opacidad 0,5 sobre la quinta ola, que cruza de derecha a izquierda (`shark-cruise`, 48 s con unos 15 s visibles; la primera pasada parte a los 3 s) y se mece.
+
+### Hallazgos
+- **Olas largas y planas** con un solo período por pantalla: se agregó `repeats` (4 a 8 según la capa) para tener más crestas.
+- **Tiburón tapado por la tarjeta:** sobre la cuarta ola quedaba detrás de la tarjeta a mitad de camino; se pasó a la quinta, que va bajo la tarjeta.
+- **La aleta flotaba sobre la línea:** se bajó 0,45 rem para que parezca salir del agua.
+
+### Verificación
+- `npm run lint` sin errores, **28/28** tests y build en verde.
+- Posición del tiburón con la animación pausada:
+  - al 1 %: x 1236, opacidad 0,16;
+  - al 15 %: x 614, opacidad 0,5;
+  - al 30 %: x -52, opacidad 0,16;
+  - al 50 %: oculto.
+  - Va de derecha a izquierda, en claro y en oscuro.
+- Con "Reducir movimiento" el tiburón no se muestra y nada se anima.
+- **No verificado:** cómo se siente el movimiento en vivo (las capturas son estáticas); Safari y Firefox.

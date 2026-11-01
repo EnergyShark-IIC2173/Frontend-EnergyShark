@@ -62,7 +62,7 @@
     }
   }
 
-  /* Intro del tiburón (DF-033): la aleta entra nadando, se mece, sale nadando y la pantalla se funde. */
+  /* Intro del tiburón (DF-033, dirección en DF-034): la aleta entra nadando desde la derecha, se mece, sale nadando y la pantalla se funde. */
   --animate-swim-in: swim-in 1s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   --animate-swim-out: swim-out 0.55s cubic-bezier(0.55, 0, 0.75, 0.2) forwards;
   --animate-bob: bob 0.9s ease-in-out infinite;
@@ -73,7 +73,7 @@
   @keyframes swim-in {
     from {
       opacity: 0;
-      transform: translateX(-9rem);
+      transform: translateX(9rem);
     }
     30% {
       opacity: 1;
@@ -83,7 +83,7 @@
   @keyframes swim-out {
     to {
       opacity: 0;
-      transform: translateX(10rem);
+      transform: translateX(-10rem);
     }
   }
 
@@ -97,9 +97,13 @@
     }
   }
 
+  /* La aleta avanza hacia la izquierda (hacia donde apunta su borde de ataque, DF-034): el agua corre a la derecha. */
   @keyframes wave-run {
-    to {
+    from {
       transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
     }
   }
 

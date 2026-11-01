@@ -6,6 +6,7 @@ import { FIN_PATH } from './Logo'
 const WAVE = `M0 4${' c2 -1.5 4 -1.5 6 0 s4 1.5 6 0'.repeat(8)}`
 
 // Intro del tiburón (DF-033), en lugar de "Cargando Auth0...".
+// Nada de derecha a izquierda, hacia donde apunta la aleta (DF-034).
 // Fases: enter (la aleta entra nadando) → idle (se mece sobre la ola mientras Auth0 carga) → out (sale nadando)
 // → fade (la pantalla se funde y deja ver la vista). `full` false: versión corta, solo idle y fade.
 // `skip`: sin sesión, se va directo al fundido para mostrar el login. Con "Reducir movimiento" no hay nado.

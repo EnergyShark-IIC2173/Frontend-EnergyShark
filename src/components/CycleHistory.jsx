@@ -9,7 +9,8 @@ import { Icon } from './ui/Icon'
 import { Pager } from './ui/Pager'
 import { btnSecondary } from './ui/classes'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
-import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
+import { RefreshTimer } from './ui/RefreshTimer'
+import { Marker, ViewHeader } from './ui/ViewHeader'
 
 // Grilla de ciclos (DF-033). 9 por página: en la página 1 el más reciente ocupa 2×2 desde xl (la mitad del ancho)
 // y caben 8 chicas exactas; en las demás, 3 filas de 3. El listado trae la cabecera; el detalle se pide al abrir el
@@ -28,7 +29,7 @@ export function CycleHistory() {
   const [page, setPage] = useState(1)
   // Ciclo abierto en el diálogo y la tarjeta desde la que crece (DF-033).
   const [selected, setSelected] = useState(null)
-  const { data, loading, error, reload, relogin } = useApiQuery(
+  const { data, loading, error, reload, relogin, updatedAt, interval } = useApiQuery(
     (api) => listCycles(api, { page, limit: LIMIT }),
     { page },
     { pollMs: page === 1 ? POLL_MS : null },
@@ -97,11 +98,8 @@ export function CycleHistory() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <ViewHeader
-        title={<>Historial de <Marker>ciclos</Marker></>}
-        subtitle={page === 1 ? `Más reciente primero (RF01). La página 1 se actualiza cada ${POLL_MS / 1000} s.` : 'Más reciente primero (RF01).'}
-      >
-        <RefreshButton onClick={reload} loading={loading} />
+      <ViewHeader title={<>Historial de <Marker>ciclos</Marker></>}>
+        <RefreshTimer updatedAt={updatedAt} intervalMs={interval} loading={loading} onRefresh={reload} />
       </ViewHeader>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap items-start gap-2">

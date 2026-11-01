@@ -1,4 +1,4 @@
-import { btnSecondary, textPrimary, textSecondary } from './classes'
+import { textPrimary, textSecondary } from './classes'
 
 // Título de vista con acciones a la derecha (filtros, "Actualizar"). `title` acepta nodos para subrayar con
 // `.marker` una palabra clave por vista (DF-030).
@@ -16,12 +16,4 @@ export function ViewHeader({ title, subtitle, children }) {
 
 export function Marker({ children }) {
   return <span className="marker">{children}</span>
-}
-
-export function RefreshButton({ onClick, loading = false }) {
-  return (
-    <button type="button" onClick={onClick} disabled={loading} className={`${btnSecondary} disabled:cursor-wait disabled:opacity-60`}>
-      {loading ? 'Actualizando…' : 'Actualizar'}
-    </button>
-  )
 }

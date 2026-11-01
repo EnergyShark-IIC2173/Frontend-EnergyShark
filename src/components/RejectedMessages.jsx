@@ -7,7 +7,8 @@ import { Badge } from './ui/Badge'
 import { Pagination } from './ui/Pagination'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { TableCard } from './ui/TableCard'
-import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
+import { RefreshTimer } from './ui/RefreshTimer'
+import { Marker, ViewHeader } from './ui/ViewHeader'
 import { inputBase, labelBase, td, th, tr } from './ui/classes'
 
 const LIMIT = 25
@@ -17,7 +18,7 @@ const POLL_MS = 15_000
 export function RejectedMessages() {
   const [page, setPage] = useState(1)
   const [kind, setKind] = useState('')
-  const { data, loading, error, reload, relogin } = useApiQuery(
+  const { data, loading, error, reload, relogin, updatedAt, interval } = useApiQuery(
     (api) => listRejected(api, { page, limit: LIMIT, kind }),
     { page, kind },
     { pollMs: POLL_MS },
@@ -30,7 +31,7 @@ export function RejectedMessages() {
   else if (rows.length === 0) {
     content = (
       <EmptyState icon="alert" title={kind ? `Sin mensajes de tipo "${rejectedKind(kind).label}"` : 'Aún no hay duplicados, NACKs ni descartados'}>
-        Se revisa de nuevo cada {POLL_MS / 1000} s.
+        Aparecen aquí en cuanto se registran.
       </EmptyState>
     )
   } else {
@@ -76,7 +77,7 @@ export function RejectedMessages() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <ViewHeader title={<>Registro de duplicados y <Marker>NACKs</Marker></>} subtitle={`Duplicados, NACKs y mensajes descartados (RF05). Se actualiza cada ${POLL_MS / 1000} s.`}>
+      <ViewHeader title={<>Registro de duplicados y <Marker>NACKs</Marker></>} subtitle="Duplicados, NACKs y mensajes descartados.">
         <div className="flex flex-col gap-2">
           <label htmlFor="rejected-kind" className={labelBase}>Tipo</label>
           <select
@@ -94,7 +95,7 @@ export function RejectedMessages() {
             ))}
           </select>
         </div>
-        <RefreshButton onClick={reload} loading={loading} />
+        <RefreshTimer updatedAt={updatedAt} intervalMs={interval} loading={loading} onRefresh={reload} />
       </ViewHeader>
 
       <StaleNotice error={data ? error : null} />

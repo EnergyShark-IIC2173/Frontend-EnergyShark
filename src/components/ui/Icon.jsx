@@ -1,5 +1,5 @@
 import {
-  ArrowsOut, BatteryHigh, CaretDown, CaretLeft, CaretRight, CaretUpDown, CheckCircle, MagnifyingGlass, CaretDoubleLeft, CaretDoubleRight, ClockCounterClockwise, Copy, Lightning, Moon, Plug, Pulse, ShareNetwork, SignOut,
+  ArrowClockwise, ArrowsOut, Clock, BatteryHigh, CaretDown, CaretLeft, CaretRight, CaretUpDown, CheckCircle, MagnifyingGlass, CaretDoubleLeft, CaretDoubleRight, ClockCounterClockwise, Copy, Lightning, Moon, Plug, Pulse, ShareNetwork, SignOut,
   SidebarSimple, List, X, Sun, Wallet, Warning, WarningCircle,
 } from '@phosphor-icons/react'
 
@@ -14,6 +14,8 @@ const icons = {
   pulse: Pulse,
   chevron: CaretDown,
   expand: ArrowsOut,
+  clock: Clock,
+  refresh: ArrowClockwise,
   prev: CaretLeft,
   next: CaretRight,
   first: CaretDoubleLeft,

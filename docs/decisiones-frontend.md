@@ -727,3 +727,21 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - es decorativo (`aria-hidden`) y con "Reducir movimiento" no aparece.
 - **Movimiento:** solo `transform` y `opacity`.
 - **Dónde vive:** `src/lib/waves.js` (con tests), `src/components/ui/SeaBackground.jsx`, `src/index.css`.
+
+## DF-037 — El tiburón pasa a ser un easter egg de la aleta del logo; el botón de login sin borde animado (reemplaza partes de DF-035 y DF-036)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana) + agente (implementación)
+
+- **Decisiones humanas:**
+  1. **Tiburón como easter egg:** ya no cruza solo cada 48 s (DF-036). Aparece solo cuando aprietas la aleta del logo del login:
+     - la aleta se sumerge y desaparece del logo;
+     - el tiburón cruza la página nadando de derecha a izquierda;
+     - al terminar, la aleta vuelve a asomar en el logo.
+     El tiburón va en un tono parecido al fondo (`sand-300` en claro, `sand-700` en oscuro) para no destacar.
+  2. **Botón "Iniciar sesión" sin borde animado:** se quita el trazo que recorría el borde (DF-035). Queda claro, con un borde verde quieto de 2 px.
+- **Decisiones del agente:**
+  - La aleta es un `<button>` con nombre accesible ("Hacer nadar al tiburón") y 44 px de área. Mientras el tiburón nada no se puede volver a apretar.
+  - El estado se comparte con un contexto (`src/hooks/sharkSwim.js`) entre el logo y el fondo.
+  - Con "Reducir movimiento" no hay nado: el tiburón aparece y se va con un fundido, quieto.
+  - La olas de DF-036 no cambian.
+- **Dónde vive:** `src/hooks/sharkSwim.js` (nuevo), `src/components/ui/Logo.jsx` (`WaterMark`), `src/components/ui/SeaBackground.jsx`, `src/components/ui/AuthScreen.jsx`, `src/components/LoginButton.jsx`, `src/index.css`.

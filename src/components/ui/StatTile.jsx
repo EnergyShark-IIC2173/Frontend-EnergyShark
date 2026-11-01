@@ -1,23 +1,23 @@
 import { Icon } from './Icon'
-import { labelBase } from './classes'
+import { labelBase, surfaceSoft, textPrimary, textSecondary } from './classes'
 
 const tones = {
-  cyan: 'bg-accent/15 text-accent',
-  pink: 'bg-pink/15 text-pink-soft',
-  violet: 'bg-violet/25 text-text-h',
-  orange: 'bg-orange/15 text-orange-soft',
+  active: 'bg-accent/10 text-accent-ink dark:bg-accent-soft dark:text-accent',
+  category: 'bg-lavender/10 text-lavender-ink dark:bg-lavender-soft dark:text-lavender',
+  warning: 'bg-rose/10 text-rose-ink dark:bg-rose-soft dark:text-rose',
+  neutral: 'bg-card text-sand-600 dark:bg-sand-900 dark:text-sand-300',
 }
 
-export function StatTile({ label, value, unit, tone = 'cyan', icon = 'bolt' }) {
+export function StatTile({ label, value, unit, tone = 'active', icon = 'bolt' }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-bg p-4">
-      <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${tones[tone]}`}>
+    <div className={`flex items-center gap-4 rounded-xl p-4 ${surfaceSoft}`}>
+      <span className={`grid size-10 shrink-0 place-items-center rounded-lg ${tones[tone] ?? tones.active}`}>
         <Icon name={icon} />
       </span>
       <div className="min-w-0">
         <p className={labelBase}>{label}</p>
-        <p className="mt-1 text-xl font-semibold text-text-h tabular-nums">
-          {value} <span className="text-sm font-normal text-text">{unit}</span>
+        <p className={`mt-1 font-display text-xl font-bold tabular-nums ${textPrimary}`}>
+          {value} <span className={`font-sans text-sm font-normal ${textSecondary}`}>{unit}</span>
         </p>
       </div>
     </div>

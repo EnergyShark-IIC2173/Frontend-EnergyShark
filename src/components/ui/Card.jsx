@@ -1,9 +1,9 @@
+import { surface } from './classes'
+
+// Tarjeta opaca, borde de 1 px y sin sombra (DF-030). `highlight` marca el ciclo más reciente con el borde en acento.
 export function Card({ as: Tag = 'div', highlight = false, padded = true, className = '', children }) {
   return (
-    <Tag className={`relative overflow-hidden rounded-2xl bg-surface shadow-card ${padded ? 'p-6' : ''} ${className}`}>
-      {highlight && (
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-pink to-magenta" />
-      )}
+    <Tag className={`relative overflow-hidden rounded-2xl ${surface} ${highlight ? 'border-accent dark:border-accent' : ''} ${padded ? 'p-6' : ''} ${className}`}>
       {children}
     </Tag>
   )

@@ -1,6 +1,6 @@
 import {
-  BatteryHigh, CaretDown, CheckCircle, ClockCounterClockwise, Copy, Lightning, Moon, Plug, Pulse, ShareNetwork, SignOut,
-  Sun, Wallet, Warning, WarningCircle,
+  BatteryHigh, CaretDown, CaretUpDown, CheckCircle, ClockCounterClockwise, Copy, Lightning, Moon, Plug, Pulse, ShareNetwork, SignOut,
+  SidebarSimple, List, X, Sun, Wallet, Warning, WarningCircle,
 } from '@phosphor-icons/react'
 
 // Íconos de Phosphor, peso bold (DF-030; reemplaza los SVG a mano de DF-010). Siempre decorativos: aria-hidden.
@@ -13,6 +13,10 @@ const icons = {
   check: CheckCircle,
   pulse: Pulse,
   chevron: CaretDown,
+  updown: CaretUpDown,
+  sidebar: SidebarSimple,
+  menu: List,
+  close: X,
   bolt: Lightning,
   wallet: Wallet,
   battery: BatteryHigh,

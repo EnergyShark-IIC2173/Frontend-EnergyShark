@@ -1,4 +1,4 @@
-// Logo de EnergyShark (DF-030): isotipo propio (una aleta sobre una línea de agua) y wordmark tipográfico. Es la
+// Logo de TiburonShark (DF-030, nombre en DF-034): isotipo propio (una aleta sobre una línea de agua) y wordmark tipográfico. Es la
 // técnica del logo de StudyLicc, sin su marca. La aleta va en `accent` con trazo en tinta, que sobre el fondo oscuro
 // se funde solo; la onda usa el color del texto. `public/favicon.svg` repite estos paths.
 
@@ -29,7 +29,7 @@ export function Logo({ size = 'sm', as: Tag = 'span', className = '' }) {
   return (
     <Tag className={`inline-flex items-center ${s.gap} text-ink dark:text-paper ${className}`}>
       <LogoMark className={s.mark} />
-      <span className={`font-display leading-none font-bold tracking-[-0.02em] uppercase ${s.text}`}>EnergyShark</span>
+      <span className={`font-display leading-none font-bold tracking-[-0.02em] uppercase ${s.text}`}>TiburonShark</span>
     </Tag>
   )
 }

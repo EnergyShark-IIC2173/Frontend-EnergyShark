@@ -52,7 +52,7 @@ export function SharkIntro({ ready, full, skip, onReveal, onDone }) {
       onAnimationEnd={(e) => e.target === e.currentTarget && e.animationName === 'splash-out' && onDone()}
       className={`fixed inset-0 z-50 grid place-items-center bg-paper dark:bg-ink ${view === 'fade' ? 'animate-splash-out' : ''}`}
     >
-      <span className="sr-only">Cargando EnergyShark</span>
+      <span className="sr-only">Cargando TiburonShark</span>
       <div aria-hidden="true" className="flex flex-col items-center gap-5 text-ink dark:text-paper">
         <div className="relative h-20 w-44 overflow-hidden">
           <span onAnimationEnd={onFinEnd} className={`absolute bottom-[0.85rem] left-[calc(50%-1.75rem)] block ${finMotion}`}>
@@ -67,7 +67,7 @@ export function SharkIntro({ ready, full, skip, onReveal, onDone }) {
           </svg>
         </div>
         <span className={`font-display text-3xl leading-none font-bold tracking-[-0.02em] uppercase ${full ? 'motion-safe:animate-wordmark-in motion-reduce:animate-fade-in' : ''}`}>
-          EnergyShark
+          TiburonShark
         </span>
       </div>
     </div>

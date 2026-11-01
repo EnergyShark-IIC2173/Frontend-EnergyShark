@@ -8,11 +8,12 @@ import { DistanceTable } from './components/DistanceTable'
 import { RejectedMessages } from './components/RejectedMessages'
 import { Sidebar } from './components/Sidebar'
 import { AuthScreen } from './components/ui/AuthScreen'
-import { Logo, LogoMark } from './components/ui/Logo'
-import { LoadingDot } from './components/ui/States'
+import { Logo } from './components/ui/Logo'
+import { SharkIntro } from './components/ui/SharkIntro'
 import { textPrimary, textSecondary } from './components/ui/classes'
 
 const SIDEBAR_KEY = 'energyshark-sidebar'
+const INTRO_KEY = 'energyshark-intro'
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
@@ -30,6 +31,28 @@ function App() {
   })
   const [mobileOpen, setMobileOpen] = useState(false)
   const closeMobile = useCallback(() => setMobileOpen(false), [])
+
+  // Intro del tiburón (DF-033): completa una vez por pestaña o al volver del login de Auth0 (`code` en la URL).
+  const [fullIntro] = useState(() => {
+    if (/[?&]code=/.test(window.location.search)) return true
+    try {
+      return sessionStorage.getItem(INTRO_KEY) !== 'seen'
+    } catch {
+      return true
+    }
+  })
+  const [revealed, setRevealed] = useState(false)
+  const [introDone, setIntroDone] = useState(false)
+  const reveal = useCallback(() => setRevealed(true), [])
+  const finishIntro = useCallback(() => {
+    setRevealed(true)
+    setIntroDone(true)
+    try {
+      sessionStorage.setItem(INTRO_KEY, 'seen')
+    } catch {
+      // Sin almacenamiento: la intro completa vuelve a salir al recargar.
+    }
+  }, [])
 
   function toggleSidebar() {
     setCollapsed((value) => {
@@ -59,19 +82,8 @@ function App() {
     }
   }
 
-  if (isLoading) return (
-    <AuthScreen>
-      <span className="flex justify-center">
-        <LogoMark className="size-16" />
-      </span>
-      <p className={`mt-6 flex items-center justify-center gap-2 ${textPrimary}`}>
-        <LoadingDot />
-        Cargando Auth0...
-      </p>
-    </AuthScreen>
-  )
-
-  return !isAuthenticated ? (
+  let content = null
+  if (!isLoading && !isAuthenticated) content = (
     <AuthScreen>
       <h1 className="flex justify-center">
         <Logo size="xl" className="flex-col" />
@@ -83,7 +95,8 @@ function App() {
         <LoginButton />
       </div>
     </AuthScreen>
-  ) : (
+  )
+  else if (!isLoading) content = (
     <div className="min-h-svh bg-paper md:flex dark:bg-ink">
       <Sidebar
         activeView={activeView}
@@ -106,6 +119,16 @@ function App() {
         </div>
       </main>
     </div>
+  )
+
+  // La vista se monta cuando la intro empieza a fundirse, así la entrada de las tarjetas se alcanza a ver (DF-033).
+  return (
+    <>
+      {revealed ? content : null}
+      {introDone ? null : (
+        <SharkIntro ready={!isLoading} full={fullIntro} skip={!isLoading && !isAuthenticated} onReveal={reveal} onDone={finishIntro} />
+      )}
+    </>
   )
 }
 

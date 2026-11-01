@@ -4,7 +4,7 @@ import { useApiQuery } from '../api/useApiQuery'
 import { fmtDate, orDash, truncId } from '../lib/format'
 import { REJECTED_KIND, rejectedKind } from '../lib/status'
 import { Badge } from './ui/Badge'
-import { Pagination } from './ui/Pagination'
+import { Pager } from './ui/Pager'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { TableCard } from './ui/TableCard'
 import { RefreshTimer } from './ui/RefreshTimer'
@@ -24,6 +24,13 @@ export function RejectedMessages() {
     { pollMs: POLL_MS },
   )
   const rows = data?.data ?? []
+
+  // Mismo paginador que el historial (DF-034): fijo al pie y, al cambiar de página, la vista sube al inicio.
+  function goToPage(next) {
+    setPage(next)
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+  }
 
   let content
   if (!data && loading) content = <LoadingState label="Cargando mensajes rechazados…" />
@@ -70,7 +77,7 @@ export function RejectedMessages() {
             })}
           </tbody>
         </TableCard>
-        <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={setPage} disabled={loading} />
+        <Pager label="Paginación de mensajes" noun="mensajes" page={data.page} totalPages={data.totalPages} total={data.total} onChange={goToPage} disabled={loading} />
       </>
     )
   }
@@ -98,6 +105,11 @@ export function RejectedMessages() {
         <RefreshTimer updatedAt={updatedAt} intervalMs={interval} loading={loading} onRefresh={reload} />
       </ViewHeader>
 
+      {data && data.totalPages > 1 ? (
+        <p className="-mt-3 self-end text-sm text-sand-600 tabular-nums dark:text-sand-400">
+          Página <span className="font-semibold text-ink dark:text-paper">{data.page}</span> de {data.totalPages}
+        </p>
+      ) : null}
       <StaleNotice error={data ? error : null} />
       {content}
     </div>

@@ -663,3 +663,28 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - `src/components/ui/Tabs.jsx`, `src/hooks/useNow.js`
   - `src/lib/pagination.js` y `src/lib/cycles.js` (con tests)
   - `src/mocks/cycles.js`, `src/index.css`
+
+## DF-034 — Nombre TiburonShark, aleta hacia la izquierda, sin estado de la API, un solo paginador y reloj de actualización (reemplaza partes de DF-011, DF-015 y DF-033)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: los seis pedidos) + agente (implementación)
+
+- **Decisiones humanas:**
+  1. **Nombre:** la app se llama **TiburonShark** en la interfaz (wordmark, intro, `<title>`). Los repos y el código siguen como están.
+  2. **Intro:** la aleta nada de derecha a izquierda, que es hacia donde apunta su borde de ataque, así se ve avanzando. La ola corre al revés, hacia la derecha.
+  3. **Sin "Estado de la API" en la sidebar.** Se quita la tarjeta de `/health` y su lógica de `App.jsx`. `getHealth` queda en el cliente.
+  4. **Un solo paginador, abajo y siempre visible:**
+     - va fijo (`sticky`) al pie de la vista, sobre el contenido;
+     - arriba solo queda, en la orilla, "Página X de Y";
+     - se elimina el paginador superior de DF-033;
+     - al cambiar de página la vista sigue subiendo al inicio.
+  5. **Sin textos de requisito ni de intervalo en los subtítulos** ("Más reciente primero (RF01)", "se actualiza cada 30 s"). En su lugar va un **reloj de actualización**:
+     - un círculo con un ícono de reloj al centro y un anillo que se descuenta hasta 0, cuando llega el poll siguiente;
+     - al pasar el mouse o con foco aparece "Actualizar", y apretarlo recarga y reinicia la cuenta;
+     - sin polling (páginas 2+ del historial), el anillo queda lleno y solo sirve para actualizar.
+     - **Precisión:** `useApiQuery` expone `updatedAt` (la hora del último dato bueno) y una recarga manual reinicia el intervalo del poll, así el anillo y el poll no se desfasan.
+     - **Movimiento:** el anillo avanza a saltos de 1 s con `stroke-dashoffset` (excepción ya documentada en StudyLicc para trazos SVG).
+  6. **El mismo paginador en "Registro de duplicados y NACKs":** `CyclePager` pasa a `ui/Pager.jsx`, genérico con su sustantivo ("ciclos", "mensajes"). Se retira `ui/Pagination.jsx`.
+- **Dónde vive:**
+  - `src/components/ui/Logo.jsx`, `SharkIntro.jsx`, `Pager.jsx` (nuevo), `RefreshTimer.jsx` (nuevo), `ViewHeader.jsx`
+  - `src/api/useApiQuery.js`, `src/index.css`, `index.html`, `src/App.jsx`
+  - `src/components/Sidebar.jsx`, `CycleHistory.jsx`, `DistanceTable.jsx`, `RejectedMessages.jsx`

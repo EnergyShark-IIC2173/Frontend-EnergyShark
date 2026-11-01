@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
-import { FIN_PATH } from './Logo'
+import { FIN_PATH, SEA_WAVE } from './Logo'
 
-// Ola periódica (período de 12 unidades) del doble del ancho de su caja: correrla un 50 % no deja salto.
-const WAVE = `M0 4${' c2 -1.5 4 -1.5 6 0 s4 1.5 6 0'.repeat(8)}`
 
 // Intro del tiburón (DF-033), en lugar de "Cargando Auth0...".
 // Nada de derecha a izquierda, hacia donde apunta la aleta (DF-034).
@@ -64,7 +62,7 @@ export function SharkIntro({ ready, full, skip, onReveal, onDone }) {
             </span>
           </span>
           <svg viewBox="0 0 96 8" preserveAspectRatio="none" className="absolute bottom-2 left-0 h-3 w-[200%] motion-safe:animate-wave-run">
-            <path d={WAVE} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            <path d={SEA_WAVE} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
           </svg>
         </div>
         <span className={`font-display text-3xl leading-none font-bold tracking-[-0.02em] uppercase ${full ? 'motion-safe:animate-wordmark-in motion-reduce:animate-fade-in' : ''}`}>

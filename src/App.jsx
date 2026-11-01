@@ -70,7 +70,7 @@ function App() {
   if (!isLoading && !isAuthenticated) content = (
     <AuthScreen>
       <h1 className="flex justify-center">
-        <Logo size="xl" className="flex-col" />
+        <Logo size="xl" water className="flex-col" />
       </h1>
       <p className={`mt-4 text-sm ${textSecondary}`}>
         Panel de operación <span className={`marker ${textPrimary}`}>energética</span> de la ciudad

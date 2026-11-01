@@ -1,37 +1,6 @@
-// Derivaciones sobre CycleSummary (GET /api/cycles). El backend no tiene endpoint de "ciclo actual".
+// Derivaciones sobre los ciclos de RF01 (DF-024). Las de la vista de negociaciones E1 se retiraron (DF-028).
 
 const time = (iso) => (iso ? new Date(iso).getTime() : NaN)
-
-// El ciclo donde hoy se puede proponer (DF-021): en ventana, con cierre futuro y con status-statement.
-export function findOpenCycle(cycles, now = Date.now()) {
-  return (cycles ?? []).find((c) =>
-    c.phase === 'negotiating' && c.statusStatement && time(c.windowClosesAt) > now,
-  ) ?? null
-}
-
-// Ventana abierta pero todavía sin status-statement: no se puede proponer (NO_STATUS_STATEMENT).
-export function findOpenCycleWithoutStatus(cycles, now = Date.now()) {
-  return (cycles ?? []).find((c) =>
-    c.phase === 'negotiating' && !c.statusStatement && time(c.windowClosesAt) > now,
-  ) ?? null
-}
-
-// Próxima ventana estimada desde los datos, nunca hardcodeada (DF-021): período = mediana de las
-// diferencias entre windowOpensAt; próxima = último + k·período, la primera posterior a now.
-export function estimateNextWindow(cycles, now = Date.now()) {
-  const opens = [...new Set((cycles ?? []).map((c) => time(c.windowOpensAt)).filter(Number.isFinite))]
-    .sort((a, b) => a - b)
-  if (opens.length < 2) return null
-
-  const diffs = opens.slice(1).map((t, i) => t - opens[i]).sort((a, b) => a - b)
-  const mid = Math.floor(diffs.length / 2)
-  const period = diffs.length % 2 ? diffs[mid] : (diffs[mid - 1] + diffs[mid]) / 2
-  if (!(period > 0)) return null
-
-  const last = opens[opens.length - 1]
-  const k = Math.max(1, Math.floor((now - last) / period) + 1)
-  return { at: new Date(last + k * period), periodMs: period }
-}
 
 // Tolerancia para give/take: el evento del ledger y paidAt difieren en milisegundos (DF-020).
 const NEGOTIATION_TOLERANCE_MS = 60_000

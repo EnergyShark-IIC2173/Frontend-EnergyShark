@@ -317,3 +317,31 @@ vistas.
 - **Intro:** la posición x de la aleta cada 100 ms baja de 475 a 380 al entrar y de 380 a 288 al salir, o sea, avanza hacia la izquierda.
 - **Regresiones:** sidebar, navegación entre ciclos, búsqueda y ← → en el diálogo, igual que antes.
 - **No verificado:** login real, Safari y Firefox.
+
+---
+
+## Quinta vuelta (misma fecha): login con movimiento (DF-035)
+
+**Prompt literal:** en `prompt/tarea-fix-rediseno-studylicc/10-login-en-movimiento.md`.
+
+**Decisión humana:** el agente ofreció cuatro fondos (mar de olas, burbujas, corrientes diagonales, cuadrícula que deriva) y Esteban eligió **mar de olas**.
+
+### Commits
+
+| Pedido | Commit |
+|---|---|
+| DF-035, antes del código | `34688a9` |
+| El agua del logo corre sin parar con la aleta quieta (`WaterMark`; `SEA_WAVE` compartido con la intro) | `a431cb1` |
+| Botón "Iniciar sesión" claro con un tramo verde que recorre el borde | `85f9c23` |
+| Fondo de seis olas a distintas velocidades en vez de la cuadrícula (`SeaBackground`) | `253f002` |
+
+### Hallazgos
+- **El borde que giraba casi no se veía.** El primer intento era un cuadrado con `conic-gradient` girando detrás del botón; en un botón ancho, el tramo solo asomaba por momentos en una esquina (capturas pausando la animación a 0, 800, 1600 y 2400 ms).
+  - Se cambió por un trazo SVG con `stroke-dashoffset`, que recorre el perímetro a velocidad constante. Se corrigió en el mismo commit del botón (`--amend`, sin push) y quedó tachado en DF-035.
+- **Olas de fondo muy planas:** se subió su alto, que es la amplitud.
+
+### Verificación
+- `npm run lint` sin errores, **26/26** tests y build en verde.
+- **Login en claro, oscuro y 390 px:** corren 7 `wave-run` (6 de fondo y 1 del logo) y 1 `border-run`; sin scroll horizontal ni errores.
+- **Con "Reducir movimiento":** ninguna animación activa, y el borde del botón queda verde completo.
+- **No verificado:** login real, Safari y Firefox (soporte de `width="calc(...)"` en el `rect` SVG).

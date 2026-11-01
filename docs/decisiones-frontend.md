@@ -706,3 +706,7 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - Con "Reducir movimiento" nada se mueve: el agua y el fondo quedan quietos y el borde del botón queda verde completo.
   - Contraste: el texto del botón queda en tinta sobre `card` (17,37:1). El tramo verde es decorativo; el foco sigue siendo `focus-ring`.
 - **Dónde vive:** `src/components/ui/AuthScreen.jsx`, `src/components/ui/SeaBackground.jsx` (nuevo), `src/components/ui/Logo.jsx` (`WaterMark`), `src/components/LoginButton.jsx`, `src/App.jsx`, `src/index.css`.
+- **Corrección (misma fecha, al implementar):** ~~el tramo del borde es un cuadrado con `conic-gradient` que gira con `rotate`~~.
+  - En un botón ancho el tramo pasaba casi siempre por los bordes cortos, y por momentos no se veía (verificado con capturas pausando la animación en distintos instantes).
+  - Se reemplazó por un `rect` SVG con `pathLength=1` y `stroke-dasharray`, animado con `stroke-dashoffset` (la técnica del "dock trace" de StudyLicc, excepción ya documentada para trazos SVG). Recorre el perímetro a velocidad constante y siempre se ve.
+  - Ya no hay degradado.

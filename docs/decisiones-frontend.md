@@ -688,3 +688,21 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - `src/components/ui/Logo.jsx`, `SharkIntro.jsx`, `Pager.jsx` (nuevo), `RefreshTimer.jsx` (nuevo), `ViewHeader.jsx`
   - `src/api/useApiQuery.js`, `src/index.css`, `index.html`, `src/App.jsx`
   - `src/components/Sidebar.jsx`, `CycleHistory.jsx`, `DistanceTable.jsx`, `RejectedMessages.jsx`
+
+## DF-035 — Login con movimiento: agua del logo, borde que gira en el botón y mar de olas de fondo (reemplaza el fondo `grid-lines` del login de DF-030)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: los tres cambios y el fondo "Mar de olas") + agente (implementación)
+
+- **Contexto:** Esteban encontró el login "demasiado fome".
+- **Decisiones humanas:**
+  1. **Agua del logo en movimiento:** la ola bajo la aleta corre sin parar, hacia la derecha como en la intro (DF-034). La aleta queda quieta.
+  2. **Botón "Iniciar sesión" con borde animado:** deja de ser verde lleno. Es una tarjeta clara con un borde de 2 px por donde gira continuamente un tramo verde (`accent`).
+  3. **Fondo "Mar de olas"** (elegido entre cuatro opciones; se descartaron burbujas, corrientes diagonales y la cuadrícula que deriva):
+     - se quitan los cuadrados;
+     - seis líneas de ola, del mismo trazo que el logo y muy tenues, cruzan la pantalla a distintas velocidades: las de abajo más rápidas y marcadas, las de arriba más lentas y tenues.
+- **Decisiones del agente:**
+  - Todo se mueve solo con `transform`: la ola corre con `translateX` sobre un trazo del doble de ancho, y el tramo del borde es un cuadrado que gira con `rotate` detrás del botón.
+  - El tramo del borde es un `conic-gradient`: excepción documentada a "sin degradados", porque es la forma de dibujar un arco que gira, y vive solo en este botón.
+  - Con "Reducir movimiento" nada se mueve: el agua y el fondo quedan quietos y el borde del botón queda verde completo.
+  - Contraste: el texto del botón queda en tinta sobre `card` (17,37:1). El tramo verde es decorativo; el foco sigue siendo `focus-ring`.
+- **Dónde vive:** `src/components/ui/AuthScreen.jsx`, `src/components/ui/SeaBackground.jsx` (nuevo), `src/components/ui/Logo.jsx` (`WaterMark`), `src/components/LoginButton.jsx`, `src/App.jsx`, `src/index.css`.

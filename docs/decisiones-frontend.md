@@ -479,3 +479,89 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - Distancia mostrada en km en vez de metros.
 - **Alternativa descartada:** esperar a S6 para tocar la vista. Lo de esta DF no depende de campos nuevos.
 - **Dónde vive:** `src/components/DistanceTable.jsx`, `src/lib/transport.js`.
+
+---
+
+> DF-030 y DF-031 se escribieron el 2026-11-01, **antes** de implementar el rediseño, en su propio commit (RDOC01). No es una tarea del roadmap E2: es un fix propio de Esteban (`prompt/tarea-fix-rediseno-studylicc/`), sobre la rama de la PR #11.
+
+## DF-030 — Rediseño con la estética de StudyLicc, modo claro y oscuro (reemplaza la paleta de DF-008 y los íconos de DF-010)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: estética, logo, color de advertencia, alcance, papel blanco) + agente (adaptación al stack, contrastes)
+
+- **Contexto:**
+  - El rediseño V6 (DF-008) dejó un estilo oscuro de neón (degradados cian/rosa, sombras fuertes) sin modo claro.
+  - Esteban pidió la estética de su plataforma StudyLicc: tinta, acento verde, subrayador amarillo, fondos de cuaderno, bordes cálidos de 1 px, sin degradados ni sombras pesadas, con modo claro y oscuro.
+  - La guía de StudyLicc está pensada para Next.js. Aquí se adapta a Vite + React 19 + Tailwind 4.
+- **Decisiones humanas:**
+  - **Alcance: solo piel y shell.** Cambian los tokens, las fuentes, los íconos, el tema, el login, el header, el sidebar y el kit `ui/`. Las vistas mantienen su estructura y su lógica, y las grillas de StatTiles se quedan porque son datos, no tarjetas de presentación. Así hay menos conflictos con S12 a S14.
+  - **Papel blanco, no crema.** En un dashboard el crema de StudyLicc no se ve profesional. Cambios en el claro:
+    - `paper` pasa de `#faf7f0` a `#fafaf8`
+    - `card` pasa de `#fffdf8` a `#ffffff`
+    - `sand-100` pasa a `#f4f3ef` y `sand-200` a `#e7e5df`, para que tiles, hover y bordes no se vean amarillentos
+    - el renglón `--rule` pasa a `#edece8` y el punto `--dot` a `#e2e0d9`
+    - el resto de la paleta y el oscuro completo quedan como en StudyLicc
+  - **Logo nuevo:** isotipo SVG propio (una aleta sobre una línea de agua) relleno en `accent` con trazo en tinta, más el wordmark "EnergyShark" en Space Grotesk 700. No se usa la marca StudyLicc. `tiburon.png` deja de importarse.
+  - **Advertencia en `rose`:** lo que era naranja ("Duplicado", "Periodo de cierre") pasa a `rose`/`rose-ink`. `coral` queda solo para errores (NACK, rechazado, ruta deshabilitada, multa).
+- **Adaptaciones al stack (agente):**
+  - Fuentes: `@fontsource/space-grotesk` (700), `@fontsource/work-sans` (400/500/600) y `@fontsource/space-mono` (400/700) en vez de `next/font`. Van dentro del bundle y se sirven desde CloudFront, sin pedir nada a Google.
+  - Tema: store propio en `src/lib/theme.js` en vez de `next-themes`:
+    - guarda `light`, `dark` o `system` en `localStorage`, con try/catch;
+    - por defecto sigue al sistema;
+    - un script inline en `index.html` pone `.dark` en `<html>` antes del primer paint, para evitar el parpadeo;
+    - la variante `dark:` se registra por clase.
+  - Íconos: `@phosphor-icons/react`, peso `bold`. `Icon.jsx` conserva su API (`<Icon name="..." />`) y mapea cada nombre a un componente de Phosphor. Reemplaza los SVG dibujados a mano de DF-010; el pedido de StudyLicc trae la aprobación de la dependencia.
+  - Movimiento: solo CSS (keyframes `section-in`, `fade-in` y `pop-in`, y rotación del chevron), siempre con `motion-safe:` o `motion-reduce:`. Duraciones de 150 a 300 ms, easing `cubic-bezier(0.22,1,0.36,1)`. No se agrega la librería `motion`.
+- **Tokens (`src/index.css`):**
+  - Claro: `paper`, `ink`, `card`, `sand-100…900`, `accent` `#2bb699`, `accent-hover`, `accent-ink` `#16715d`, `marker` `#ffd23f`, `coral`/`coral-ink`, `rose`/`rose-ink` y `lavender`/`lavender-ink`.
+  - Oscuro (`.dark`): reasigna cada token por su rol, en azul tinta:
+    - `ink` es el fondo (`#141822`) y `paper` es el texto (`#e7eaf1`);
+    - `sand-900` es la superficie y `sand-800` la superficie elevada, el hover y el borde;
+    - `accent` sube a `#4fdcb5`;
+    - la elevación se marca por luminosidad, con `edge-light` en las tarjetas.
+  - Prohibidas las escalas frías de Tailwind (`zinc`, `slate`, `gray`, `neutral`, `stone`), `white/`, `black/`, `bg-linear-*` y la sombra `shadow-card`.
+- **Tonos de `Badge` (los usa `src/lib/status.js`):**
+
+| Tono | Claro | Oscuro | Antes | Uso |
+|---|---|---|---|---|
+| `active` | `accent/10` + `accent-ink` | `accent-soft` + `accent` | `cyan` | vigente, propuesto, aceptado, habilitado, mercado abierto |
+| `settled` | `accent` sólido + `ink` | igual | `success` | liquidado, reporte enviado |
+| `error` | `coral/10` + `coral-ink`, ícono | `coral/15` + `coral` | `pink` | NACK, rechazado, ruta deshabilitada, reporte no enviado |
+| `warning` | `rose/10` + `rose-ink`, ícono | `rose-soft` + `rose` | `orange` | duplicado, periodo de cierre |
+| `category` | `lavender/10` + `lavender-ink` | `lavender-soft` + `lavender` | `violet` | consumo |
+| `neutral` | `sand-100` + `sand-600` | `sand-800` + `sand-300` | `neutral` | enviado, expirado, cerrado, pendiente |
+
+- **Contraste (WCAG, script en la sesión):** todo el texto da al menos 4,5:1 y el foco al menos 3:1.
+  - Claro:
+    - `ink`: 16,62 sobre `paper` y 17,37 sobre `card`
+    - `sand-600`: 7,64 sobre `paper` y 6,34 sobre `sand-200`
+    - `accent-ink`: 5,65 sobre `paper` y 5,09 sobre `accent-soft`
+    - botón (`ink` sobre `accent`): 6,83
+    - chips al 10 % sobre `card` / sobre `sand-100`: `coral-ink` 5,17/4,68, `rose-ink` 5,01/4,54, `lavender-ink` 5,20/4,74, `accent-ink` 5,41/4,90
+  - Oscuro:
+    - `paper`: 14,73 sobre `ink` y 11,37 sobre `sand-800`
+    - `sand-400`: 5,95 sobre `sand-800`
+    - `accent`: 9,34 sobre `sand-900`
+    - botón: 10,34
+    - `coral` sobre su chip: 5,37
+    - `rose` sobre `rose-soft`: 7,29
+    - texto sobre el marker al 34 %: 5,42
+  - **Hallazgo:** `rose-ink` sobre `rose-soft` da 4,47:1 en claro. Por eso en claro los chips usan un tinte al 10 % del tono pleno (como hace StudyLicc) y los `*-soft` solo se usan en oscuro. Los chips no van sobre `sand-200`: el hover de las filas es `sand-100`.
+- **Alternativas descartadas:**
+  - Copiar `DESIGN.md`, `globals.css` y `Logo.tsx` de StudyLicc al repo: son de otra marca. La guía adaptada vive en `docs/design/sistema-visual.md`.
+  - Tiburón PNG recoloreado como isotipo: Esteban prefirió un SVG nuevo.
+  - Chip amarillo `marker` para advertencias: rompe la regla de que el marker es solo del subrayador y del logo.
+- **Dónde vive:** `src/index.css`, `src/main.jsx`, `index.html`, `src/lib/theme.js`, `src/components/ui/` (incluidos `Logo.jsx` y `ThemeSwitch.jsx`), `src/lib/status.js` (tonos), `public/favicon.svg` y las vistas (solo clases).
+
+## DF-031 — Datos nulos como "Sin dato" y rangos con "a" (reemplaza la fila "—" de DF-019)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana)
+
+- **Contexto:** la estética de DF-030 prohíbe el em-dash y el en-dash en los textos. DF-019 mostraba "—" en los campos nulos, y los rangos de la ventana del ciclo usaban "–".
+- **Decisión:**
+  - Los campos nulos (`fmt`, `fmtDate`, `fmtTime`, `orDash`, `truncId` y la etiqueta de un estado desconocido) muestran **"Sin dato"**. Se lee bien en voz alta con lector de pantalla y no se confunde con un signo negativo en columnas numéricas.
+  - Los rangos se escriben con "a": "Mercado 10:00:00 a 10:10:00".
+  - El resto de DF-019 (reporte pendiente, no enviado, sin status-statement) sigue igual.
+- **Alternativas descartadas:**
+  - Guion simple "-": en columnas numéricas parece un signo negativo.
+  - Mantener "—" como glifo de dato: contradice la regla del sistema visual.
+- **Dónde vive:** `src/lib/format.js` (con tests), `src/lib/status.js` y `src/components/CycleHistory.jsx`.

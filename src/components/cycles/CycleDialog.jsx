@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Icon } from '../ui/Icon'
 import { textPrimary, textSecondary } from '../ui/classes'
 import { CycleDetail } from './CycleDetail'
@@ -24,6 +24,8 @@ export function CycleDialog({ cycleId, origin, live, position, total, onPrev, on
   const panelRef = useRef(null)
   const closing = useRef(false)
   const closeRef = useRef(null)
+  // La pestaña vive aquí y no en el detalle: se mantiene al pasar al ciclo anterior o siguiente.
+  const [tab, setTab] = useState('resumen')
   const originRef = useRef(origin)
 
   useLayoutEffect(() => {
@@ -133,7 +135,7 @@ export function CycleDialog({ cycleId, origin, live, position, total, onPrev, on
             </div>
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6">
-            <CycleDetail key={cycleId} cycleId={cycleId} live={live} />
+            <CycleDetail key={cycleId} cycleId={cycleId} live={live} tab={tab} onTab={setTab} />
           </div>
         </div>
       </div>

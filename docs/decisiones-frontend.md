@@ -565,3 +565,47 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - Guion simple "-": en columnas numéricas parece un signo negativo.
   - Mantener "—" como glifo de dato: contradice la regla del sistema visual.
 - **Dónde vive:** `src/lib/format.js` (con tests), `src/lib/status.js` y `src/components/CycleHistory.jsx`.
+
+## DF-032 — Segunda vuelta del rediseño: entrada de ciclos, sidebar fija y plegable, menú de cuenta y un solo ciclo abierto (reemplaza partes de DF-011, DF-020 y DF-030)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: todos los cambios de comportamiento) + agente (implementación y accesibilidad)
+
+- **Contexto:** Esteban revisó el primer rediseño (DF-030) y pidió una página más seria y minimalista, con un shell como el de los chats de LLM.
+- **Decisiones humanas:**
+  1. **Entrada de los ciclos:** al cargar, las tarjetas aparecen una tras otra, de arriba hacia abajo. Usan `rise-in` (fade in subiendo 8 px) con 70 ms de retraso entre una y otra. Con "Reducir movimiento" solo hay un fundido corto.
+  2. **El primer ciclo parte cerrado.** Ya no se abre solo, a diferencia de DF-020. Sigue destacado con el borde en acento.
+  3. **Fondo plano:** se quita el `dot-grid` del área principal, que reemplaza ese punto de DF-030. Las vistas van sobre `paper`/`ink` lisos.
+  4. **Sin "Sesión iniciada como" y el correo:** la cuenta se muestra con la foto y el nombre del usuario de Auth0 (`picture`, `name`). Si la foto falla, se muestran las iniciales.
+  5. **Sidebar fija y plegable:**
+     - queda fija a la altura de la pantalla y solo hace scroll el contenido;
+     - un botón la pliega a un riel de íconos, y la animación va hacia el lado al cerrar y al revés al abrir;
+     - el estado se recuerda en `localStorage`.
+  6. **Pie de la sidebar:** el switch "Modo oscuro" y el botón de cuenta (foto y nombre). Al apretar el botón se abre un menú con "Cerrar sesión", como en los chats de LLM. Se elimina el header superior y el logo pasa a la cabeza de la sidebar.
+  7. **Un solo ciclo abierto a la vez:**
+     - apretar cualquier parte de una tarjeta cerrada la abre y cierra la que estaba abierta;
+     - apretar fuera del ciclo abierto lo cierra;
+     - el detalle se sigue montando solo cuando está abierto (DF-024).
+  8. **Botón de detalle destacado:**
+     - va abajo a la derecha de la tarjeta, como botón primario ("Ver detalle");
+     - al abrir, baja al final del detalle y cambia a tinta ("Cerrar detalle").
+- **Decisiones del agente:**
+  - **Animar el ancho de la sidebar es una excepción documentada** a "solo transform/opacity" (como la de las carpetas en StudyLicc):
+    - mover solo el contenido con transform deja un hueco o lo tapa durante la animación;
+    - dura 250 ms con easing `cubic-bezier(0.22,1,0.36,1)`, y con "Reducir movimiento" el cambio es instantáneo;
+    - los textos se apagan con `opacity`.
+  - **En el celular (bajo `md`)** no hay riel. Una barra superior con el logo y un botón de menú abre la sidebar como cajón que entra con `translate-x` sobre un velo. Se cierra con el velo, con Escape o al elegir una sección. Reemplaza la fila horizontal de DF-011.
+  - **Sidebar fija con `sticky`** y no con un contenedor de scroll propio: el scroll sigue siendo el de la ventana, así funcionan el scroll al abrir un ciclo y la restauración del navegador.
+  - **Clic afuera:** se escucha `pointerdown` en el documento. No cuenta un clic en la barra de scroll (destino `<html>`).
+  - **Teclado:** la tarjeta completa se puede apretar solo con mouse o dedo. Para el teclado, el botón "Ver detalle" tiene `aria-expanded` y `aria-controls`, y abrir otro ciclo con el botón también cierra el anterior.
+  - **Scroll al abrir o cerrar:** al abrir o cerrar un ciclo, si su borde superior quedó fuera de la pantalla (porque se cerró uno más largo arriba), la página vuelve a su inicio.
+  - **Menú de cuenta:**
+    - `aria-haspopup="menu"` y `aria-expanded`;
+    - se cierra con Escape (vuelve el foco al botón) y al apretar afuera;
+    - aparece con `pop-in`.
+  - En el riel, cada ítem conserva su nombre accesible (el texto sigue en el DOM con opacidad 0) y lleva `title` como tooltip. "Probar /health" queda como ícono, con un punto de color y texto para lectores de pantalla.
+- **Alternativa descartada:** ocultar la sidebar del todo en vez de dejar un riel. Se pierde la navegación por íconos, que es el estándar que pidió Esteban.
+- **Dónde vive:**
+  - `src/App.jsx` y `src/components/Sidebar.jsx` (nuevo)
+  - `src/components/ui/UserMenu.jsx` (nuevo), `src/components/ui/Avatar.jsx` (nuevo), `src/components/ui/ThemeSwitch.jsx`
+  - `src/components/CycleHistory.jsx`, `src/index.css`
+  - se elimina `src/components/LogoutButton.jsx`

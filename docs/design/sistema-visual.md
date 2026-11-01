@@ -21,9 +21,9 @@ Guía corta para escribir UI en este repo. Es la estética de StudyLicc adaptada
   - Cifras siempre con `tabular-nums`.
 - Formas: botones e inputs `rounded-xl`, tarjetas `rounded-2xl`, chips `rounded-lg`.
 - Foco: siempre `focus-ring` (o `focus-ring-inset` dentro de contenedores con overflow). Tap targets de 44 px (`min-h-11`).
-- Fondo de cuaderno: `dot-grid` en el área principal y `grid-lines` en el login. Las tarjetas son opacas encima.
+- Fondo plano en el área principal (DF-032). El `grid-lines` queda solo en el login. Las tarjetas son opacas.
 - Subrayador: `.marker` en 1 palabra clave por vista (el título).
-- Movimiento: solo `transform`, `opacity` y `clip-path`, de 150 a 300 ms con `cubic-bezier(0.22,1,0.36,1)`, siempre con `motion-safe:` o con respaldo `motion-reduce:`.
+- Movimiento: solo `transform`, `opacity` y `clip-path`, de 150 a 300 ms con `cubic-bezier(0.22,1,0.36,1)`, siempre con `motion-safe:` o con respaldo `motion-reduce:`. Única excepción: el ancho de la sidebar al plegarse (DF-032).
 - Textos en español de Chile, tratando de "tú", sin em-dash ni en-dash, sin emojis. Los nulos se muestran como "Sin dato" (DF-031).
 - Íconos: Phosphor, peso bold, a través de `<Icon name="..." />` (`src/components/ui/Icon.jsx`). Si falta uno, agrégalo al mapa.
 

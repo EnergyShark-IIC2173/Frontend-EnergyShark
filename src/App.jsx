@@ -102,8 +102,8 @@ function App() {
         </button>
       </nav>
 
-      {/* Fondo de cuaderno detrás de las tarjetas, que son opacas (DF-030) */}
-      <main className="min-w-0 bg-paper px-4 py-6 dot-grid md:col-start-2 md:row-span-2 md:row-start-2 md:px-8 md:py-8 dark:bg-ink">
+      {/* Fondo plano: más serio para un dashboard (DF-032) */}
+      <main className="min-w-0 bg-paper px-4 py-6 md:col-start-2 md:row-span-2 md:row-start-2 md:px-8 md:py-8 dark:bg-ink">
         <div className="mx-auto w-full max-w-6xl">
           {/* Renderizado condicional de las vistas */}
           {activeView === 'history' && <CycleHistory />}

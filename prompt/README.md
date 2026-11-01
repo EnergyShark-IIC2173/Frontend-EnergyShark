@@ -45,6 +45,7 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 - DF-030 y DF-031 se commitearon antes del código (`fd16998`).
 - Los "prompts de subtarea" de `01` a `05` son extractos literales del plan aprobado y el de `06` se escribió durante la sesión. Los registros se escribieron al cierre.
 - Segunda vuelta (`07`): pedidos de Esteban tras revisar el primer rediseño; DF-032 antes del código (`2c6f582`) y un commit por pedido. El prompt de subtarea se escribió durante la sesión.
+- Tercera vuelta (`08`): intro, grilla con diálogo, navegación y detalle por pestañas; DF-033 antes del código (`ba63560`) y un commit por pedido. El prompt de subtarea se escribió durante la sesión.
 
 Tareas **no** ejecutadas:
 - ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.

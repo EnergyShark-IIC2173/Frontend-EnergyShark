@@ -183,3 +183,92 @@ vistas.
 ### Pendiente
 - Esteban: probar con su login. Push y PR cuando lo confirme.
 - El login sigue con `grid-lines`: el pedido fue quitar los puntos del área principal. Si quieres el login liso, es un cambio de una línea.
+
+---
+
+## Tercera vuelta (misma fecha): intro, grilla con diálogo, navegación y detalle por pestañas (DF-033)
+
+**Prompt literal:** en `prompt/tarea-fix-rediseno-studylicc/08-tercera-vuelta.md`. Pidió de nuevo un commit por cambio.
+
+### Flujo de trabajo
+1. **Docs antes que el código:** DF-033, commit `ba63560`.
+2. **Commits:**
+
+| Pedido | Commit |
+|---|---|
+| 1. Intro divertida del tiburón al iniciar sesión, en vez de "Cargando Auth0" | `db4711f` |
+| 3. Grilla con el ciclo actual a la mitad del ancho, tarjetas chicas a los lados y diálogo que se abre con animación | `ba2c9f3` |
+| 2. Navegación más fácil entre ciclos (y volver arriba al cambiar de página) | `b841dd2` |
+| 4. Rediseño de la lectura del detalle del ciclo | `6982a26` |
+
+   **Orden distinto al pedido:** el 3 va antes que el 2 porque la navegación (búsqueda por ID, anterior/siguiente) abre el diálogo que crea el 3.
+
+### Qué se construyó
+- **Intro:** `src/components/ui/SharkIntro.jsx` y keyframes en `src/index.css` (`swim-in`, `bob`, `wave-run`, `swim-out`, `wordmark-in`, `splash-out`).
+  - Fases: la aleta entra, se mece sobre la ola mientras Auth0 carga, sale nadando y la pantalla se funde.
+  - La vista se monta al empezar el fundido, para que se vea la entrada escalonada de las tarjetas.
+  - Completa una vez por pestaña o al volver del login (`code` en la URL); corta en las recargas siguientes; sin nado con "Reducir movimiento".
+  - Tiene un respaldo con `setTimeout` para que nunca bloquee la app.
+- **Grilla:**
+  - `src/components/cycles/CycleCards.jsx`:
+    - `CurrentCycleCard`: 2×2 desde xl, con avance mercado/cierre con `scaleX`, cuenta regresiva (`useNow`) y contadores grandes;
+    - `CycleTile`: la tarjeta entera es un botón.
+  - `src/components/cycles/parts.jsx` (insignias compartidas).
+  - 9 ciclos por página (la página 1 cuadra exacto).
+  - `src/mocks/cycles.js` genera 40 ciclos históricos.
+- **Diálogo:** `src/components/cycles/CycleDialog.jsx`, un `<dialog>` modal.
+  - Crece desde la tarjeta con WAAPI (translate y scale desde su rectángulo) y vuelve a ella al cerrar.
+  - Se cierra con Escape, el botón o el velo, y bloquea el scroll de la página.
+  - En el celular ocupa la pantalla.
+- **Navegación:**
+  - `src/components/cycles/CyclePager.jsx`: números con elipsis desde `src/lib/pagination.js`, arriba y abajo. Al cambiar de página sube al inicio y enfoca la grilla.
+  - `CycleSearch.jsx`: abre un ciclo por ID con `GET /api/cycles/{cycleId}`.
+  - "Volver al ciclo actual".
+  - En el diálogo, anterior/siguiente con botones y ← →, cruzando de página (`neighbor`).
+- **Detalle:** `src/components/cycles/CycleDetail.jsx` reescrito, más `DataViews.jsx` (`DataTable`, `KeyValues`, `Section`) y `src/components/ui/Tabs.jsx`.
+  - Cifras clave siempre a la vista y la última operación con "Ver".
+  - Pestañas Resumen (línea de tiempo, precios, financiamiento), Mercado, Swaps (con totales), Cierre (cobertura del déficit) y Protocolo E1.
+  - La pestaña se mantiene al pasar al ciclo vecino.
+- **Lógica nueva con tests:** `nextMilestone` y `cycleProgress` (`src/lib/cycles.js`), `fmtClock` y `fmtDay` (`src/lib/format.js`), `pageItems` y `neighbor` (`src/lib/pagination.js`).
+
+### Hallazgos / Errores encontrados y corregidos
+- **El diálogo no crecía desde la tarjeta.** En desarrollo, StrictMode corre el efecto dos veces; la segunda medición partía del panel ya transformado y su animación (identidad) pisaba a la primera. Se cancelan las animaciones en la limpieza. Se verificó midiendo el rectángulo del panel cada 70 ms: parte junto a la tarjeta (x 929) y llega a su lugar (x 144) en unos 300 ms.
+- **Las flechas dejaban de funcionar al cruzar de página.** Mientras llega la página nueva, el ciclo abierto no está en la lista: "Anterior" se deshabilita un instante y el foco cae al `body`. Ahora las flechas se escuchan en `document` y, si el foco se perdió, vuelve al botón de cerrar.
+- **Panel que saltaba de alto** al cargar el detalle: ahora tiene un alto fijo desde `sm`.
+- **Créditos cortados en las tarjetas chicas:** compartían fila con la última operación. Ahora van en su propia fila, y la ventana usa la hora sin segundos (`fmtClock`).
+- **Prueba engañosa de la intro:** las capturas en serie en Chrome headless congelan el avance de la animación y parecía trabada. Se verificó con `document.getAnimations()` sin capturas y con una sola captura por corrida.
+- **Detalles menores:** botón "Ver" de 36 px subido a 44 px; "1 swaps" pasa a "1 swap"; placeholder del buscador en Work Sans para que no se corte.
+
+### Verificación
+- `npm run lint` sin errores.
+- `npx -y node@22 --test "src/lib/*.test.js"` → **26/26**.
+- `npm run build` en verde; los mocks no entran al build.
+- Harness fuera del repo (stub de Auth0 que simula 1,2 s de carga):
+  - **Intro completa:** swim-in, después swim-out a los ~1,5 s, y la vista aparece a los ~2 s.
+  - **Recarga:** versión corta. **Movimiento reducido:** solo fundido.
+  - **Sin sesión:** se va al login.
+- **Grilla:** ciclo actual 2×2 a 1440 px, 1 columna a 390 px; sin scroll horizontal, en claro y oscuro.
+- **Diálogo:**
+  - abre con foco dentro y bloquea el scroll;
+  - Escape cierra y devuelve el foco a la tarjeta;
+  - el velo cierra.
+- **Navegación:**
+  - el "Siguiente" de abajo deja `scrollY` en 0 y el foco en la grilla;
+  - la página 5 funciona;
+  - buscar `cycle-9999` muestra "No existe el ciclo cycle-9999." y `cycle-9400` abre su diálogo;
+  - en el diálogo, → desde el último de la página 1 pasa a cycle-9423 ("10 de 43"), ← vuelve y otro ← avanza dentro de la página;
+  - "Volver al ciclo actual" aparece en la página 2.
+- **Detalle:**
+  - la pestaña Swaps se mantiene al pasar a cycle-9431;
+  - "Ver" abre Cierre con la fila marcada;
+  - Home en las pestañas va a Resumen;
+  - el ciclo E1 muestra Resumen, Cierre y Protocolo E1.
+- **Regresión:** se repitieron las capturas de las 3 vistas, tema, foco, movimiento reducido y sidebar; todo igual que antes.
+- **No verificado:**
+  - con el login real de Auth0 (cuánto tarda en volver con `code` cambia cuánto se ve la aleta en reposo);
+  - Safari y Firefox: animación del `<dialog>` y `::backdrop`;
+  - lectores de pantalla reales: solo se revisaron roles y atributos.
+
+### Pendiente
+- Esteban: probarlo con su login. Push y PR cuando lo confirme.
+- El listado de RF01 real tiene que respetar `page` y `limit` (9). El buscador usa el endpoint de detalle, que es el de E-API (pendiente en el backend).

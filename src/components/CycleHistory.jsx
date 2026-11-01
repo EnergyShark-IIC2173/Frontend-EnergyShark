@@ -3,10 +3,10 @@ import { listCycles } from '../api/endpoints'
 import { useApiQuery } from '../api/useApiQuery'
 import { CurrentCycleCard, CycleTile } from './cycles/CycleCards'
 import { CycleDialog } from './cycles/CycleDialog'
-import { CyclePager } from './cycles/CyclePager'
 import { CycleSearch } from './cycles/CycleSearch'
 import { neighbor } from '../lib/pagination'
 import { Icon } from './ui/Icon'
+import { Pager } from './ui/Pager'
 import { btnSecondary } from './ui/classes'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
@@ -90,7 +90,7 @@ export function CycleHistory() {
             <CycleTile key={cycle.cycleId} cycle={cycle} onOpen={open(cycle.cycleId)} {...enter(i + 1)} />
           ))}
         </div>
-        <CyclePager label="Paginación de ciclos, abajo" page={data.page} totalPages={data.totalPages} total={data.total} onChange={goToPage} disabled={loading} />
+        <Pager label="Paginación de ciclos" noun="ciclos" page={data.page} totalPages={data.totalPages} total={data.total} onChange={goToPage} disabled={loading} />
       </>
     )
   }
@@ -113,7 +113,8 @@ export function CycleHistory() {
             </button>
           ) : null}
         </div>
-        {data ? <CyclePager page={data.page} totalPages={data.totalPages} total={data.total} onChange={goToPage} disabled={loading} /> : null}
+        {/* Un solo paginador, abajo (DF-034); aquí solo la página actual. */}
+        {data ? <p className="self-center text-sm text-sand-600 tabular-nums dark:text-sand-400">Página <span className="font-semibold text-ink dark:text-paper">{data.page}</span> de {data.totalPages}</p> : null}
       </div>
       <StaleNotice error={data ? error : null} />
       {content}

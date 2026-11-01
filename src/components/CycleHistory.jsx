@@ -20,6 +20,8 @@ import { labelBase, sectionTitle } from './ui/classes'
 // El listado trae la cabecera; el detalle se pide al abrir la tarjeta (DF-024).
 const LIMIT = 10
 const POLL_MS = 30_000
+// Las tarjetas entran una tras otra, de arriba hacia abajo (DF-032). Solo al montarse: el polling no las re-anima.
+const STAGGER_MS = 70
 
 // Un ciclo v3 trae los instantes del mercado (DF-027); uno de la E1, no.
 const isV3 = (cycle) => Boolean(cycle?.market || cycle?.statusStatement?.market)
@@ -42,7 +44,7 @@ export function CycleHistory() {
     content = (
       <>
         {cycles.map((cycle, i) => (
-          <CycleCard key={cycle.cycleId} cycle={cycle} defaultOpen={i === 0} live={page === 1 && i === 0} />
+          <CycleCard key={cycle.cycleId} cycle={cycle} defaultOpen={i === 0} live={page === 1 && i === 0} enterDelay={i * STAGGER_MS} />
         ))}
         <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={setPage} disabled={loading} />
       </>
@@ -91,13 +93,13 @@ function WindowLine({ cycle }) {
   )
 }
 
-function CycleCard({ cycle, defaultOpen, live }) {
+function CycleCard({ cycle, defaultOpen, live, enterDelay = 0 }) {
   const [open, setOpen] = useState(defaultOpen)
   const last = cycle.lastOperationApplied
   const counts = cycle.counts
 
   return (
-    <Card highlight={defaultOpen}>
+    <Card highlight={defaultOpen} className="motion-safe:animate-rise-in motion-reduce:animate-fade-in" style={{ animationDelay: `${enterDelay}ms` }}>
       {/* Cabecera siempre visible: RF01 exige identificar la última operación aplicada (DF-020). */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">

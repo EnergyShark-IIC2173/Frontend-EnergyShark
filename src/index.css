@@ -51,12 +51,21 @@
   --color-lavender-soft: #ece8f5;
 
   --animate-fade-in: fade-in 0.3s ease-out backwards;
+  /* Entrada de las tarjetas de ciclo, una tras otra con `animation-delay` (DF-032). */
+  --animate-rise-in: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   --animate-section-in: section-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   --animate-pop-in: pop-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 
   @keyframes fade-in {
     from {
       opacity: 0;
+    }
+  }
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
     }
   }
 

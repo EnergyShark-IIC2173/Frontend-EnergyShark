@@ -272,3 +272,48 @@ vistas.
 ### Pendiente
 - Esteban: probarlo con su login. Push y PR cuando lo confirme.
 - El listado de RF01 real tiene que respetar `page` y `limit` (9). El buscador usa el endpoint de detalle, que es el de E-API (pendiente en el backend).
+
+---
+
+## Cuarta vuelta (misma fecha): TiburonShark, aleta hacia la izquierda, paginador único y reloj (DF-034)
+
+**Prompt literal:** en `prompt/tarea-fix-rediseno-studylicc/09-cuarta-vuelta.md`.
+
+### Commits
+
+| Pedido | Commit |
+|---|---|
+| DF-034, antes del código | `9dc6118` |
+| 1. La app se llama TiburonShark (wordmark, intro, `<title>`) | `22a13ec` |
+| 2. La aleta nada de derecha a izquierda, hacia donde apunta; la ola corre a la derecha | `a4141d3` |
+| 3. Sin "Estado de la API" en la sidebar | `1bf189d` |
+| 4. Un solo paginador fijo al pie; arriba solo "Página X de Y" | `8f08aa2` |
+| 5. Reloj de actualización en vez del botón; sin "(RF01)" ni "se actualiza cada N s" | `94b4e56` |
+| 6. El mismo paginador en duplicados y NACKs | `ff08dca` |
+
+### Qué se construyó
+- `src/components/ui/RefreshTimer.jsx`: círculo con reloj y un anillo que se descuenta con `stroke-dashoffset`, a saltos de 1 s.
+  - "Actualizar" aparece al pasar el mouse o con foco, con los segundos que faltan.
+  - Al apretarlo recarga y reinicia la cuenta.
+  - Sin polling, el anillo queda lleno.
+- `src/api/useApiQuery.js`: expone `updatedAt` e `interval`; una recarga manual reinicia el intervalo del poll, así el anillo y el poll no se desfasan.
+- `src/components/ui/Pager.jsx`: el `CyclePager` pasó a ser genérico (`noun`) y va `sticky` al pie. Se borró `ui/Pagination.jsx`.
+- `Sidebar.jsx` y `App.jsx` sin la tarjeta ni la lógica de `/health`.
+- Textos fuera de la interfaz:
+  - "Más reciente primero (RF01)";
+  - "(RF05)";
+  - "(DF-029)";
+  - todos los "se actualiza/revisa cada N s".
+
+### Hallazgo corregido
+- Justo después de recargar, el reloj mostraba 31 s de 30: `useNow` todavía tenía la hora del tick anterior a `updatedAt`. Se acota al intervalo.
+
+### Verificación
+- `npm run lint` sin errores, **26/26** tests y build en verde.
+- **Reloj:** a los 3 s muestra 28 s, a los 8 s muestra 23 s; al apretarlo se reinicia.
+- **Paginador:**
+  - el pie del paginador coincide con el borde de la ventana (900/900 px), siempre visible;
+  - en NACKs, "Siguiente" deja `scrollY` en 0 y muestra "Página 2 de 4" arriba y abajo.
+- **Intro:** la posición x de la aleta cada 100 ms baja de 475 a 380 al entrar y de 380 a 288 al salir, o sea, avanza hacia la izquierda.
+- **Regresiones:** sidebar, navegación entre ciclos, búsqueda y ← → en el diálogo, igual que antes.
+- **No verificado:** login real, Safari y Firefox.

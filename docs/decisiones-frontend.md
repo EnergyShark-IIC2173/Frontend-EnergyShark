@@ -710,3 +710,20 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - En un botón ancho el tramo pasaba casi siempre por los bordes cortos, y por momentos no se veía (verificado con capturas pausando la animación en distintos instantes).
   - Se reemplazó por un `rect` SVG con `pathLength=1` y `stroke-dasharray`, animado con `stroke-dashoffset` (la técnica del "dock trace" de StudyLicc, excepción ya documentada para trazos SVG). Recorre el perímetro a velocidad constante y siempre se ve.
   - Ya no hay degradado.
+
+## DF-036 — Olas del login más orgánicas y un tiburón ocasional (amplía DF-035)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: pedido, "probemos cómo sale") + agente (diseño)
+
+- **Contexto:** las olas de DF-035 eran la misma senoide repetida y se veían mecánicas. Esteban pidió que se sienta más el movimiento y que, muy sutilmente, a veces cruce un tiburón.
+- **Olas:**
+  - cada capa tiene su propio patrón de crestas irregulares (distinto alto y ancho), generado por `src/lib/waves.js` y repetido dos veces para que correr un 50 % no deje salto;
+  - cada capa suma un vaivén vertical lento (`sea-bob`, de 7 a 11 s) al avance horizontal, y una segunda línea más tenue que la acompaña como textura de oleaje;
+  - las capas de abajo son más altas, rápidas y marcadas.
+- **Tiburón ocasional:**
+  - la aleta del isotipo, chica y translúcida (opacidad 0,45), cruza la pantalla de derecha a izquierda (hacia donde apunta, DF-034) sobre la cuarta ola y se mece con ella;
+  - el cruce dura unos 15 s dentro de un ciclo de 48 s; el resto del tiempo no está;
+  - aparece y se va con un fundido;
+  - es decorativo (`aria-hidden`) y con "Reducir movimiento" no aparece.
+- **Movimiento:** solo `transform` y `opacity`.
+- **Dónde vive:** `src/lib/waves.js` (con tests), `src/components/ui/SeaBackground.jsx`, `src/index.css`.

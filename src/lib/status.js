@@ -1,7 +1,9 @@
+import { EMPTY } from './format.js'
+
 // Traducciones y tonos de Badge. Los estados viajan en inglés y solo se traducen al mostrar.
 // Tonos semánticos de DF-030: warning (rose) queda para "duplicate" y el periodo de cierre; error (coral), solo errores.
 
-const fallback = (value) => ({ label: value ?? '—', tone: 'neutral' })
+const fallback = (value) => ({ label: value ?? EMPTY, tone: 'neutral' })
 
 export const NEGOTIATION_STATUS = {
   proposed: { label: 'Propuesta', tone: 'active' },
@@ -82,9 +84,9 @@ export const negotiationStatus = (status) => NEGOTIATION_STATUS[status] ?? fallb
 export const rejectedKind = (kind) => REJECTED_KIND[kind] ?? fallback(kind)
 export const cyclePhase = (phase) => CYCLE_PHASE[phase] ?? fallback(phase)
 export const origin = (value) => ORIGIN[value] ?? fallback(value)
-export const directionLabel = (direction) => DIRECTION[direction] ?? direction ?? '—'
-export const operationLabel = (type) => OPERATION_TYPE[type] ?? type ?? '—'
+export const directionLabel = (direction) => DIRECTION[direction] ?? direction ?? EMPTY
+export const operationLabel = (type) => OPERATION_TYPE[type] ?? type ?? EMPTY
 export const marketPhaseLabel = (phase) => MARKET_PHASE[phase] ?? fallback(phase)
 export const swapStatus = (status) => SWAP_STATUS[status] ?? fallback(status)
 export const bidState = (state) => BID_STATE[state] ?? fallback(state)
-export const swapRole = (role) => SWAP_ROLE[role] ?? role ?? '—'
+export const swapRole = (role) => SWAP_ROLE[role] ?? role ?? EMPTY

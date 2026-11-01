@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { getCycle, listCycles } from '../api/endpoints'
 import { useApiQuery } from '../api/useApiQuery'
 import { buyerTotals, hasLegacyData, marketPhase, matchLastOperation, reportPending } from '../lib/cycles'
-import { fmt, fmtDate, fmtTime, truncId } from '../lib/format'
+import { EMPTY, fmt, fmtDate, fmtTime, truncId } from '../lib/format'
 import { paymentAmount, priceCap, round2 } from '../lib/negotiation'
 import {
   bidState, cyclePhase, directionLabel, marketPhaseLabel, negotiationStatus, operationLabel, origin, swapRole, swapStatus,
@@ -80,13 +80,13 @@ function WindowLine({ cycle }) {
   if (m) {
     return (
       <p className="mt-1 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-        Mercado {fmtDate(m.opensAt)} – {fmtTime(m.closesAt)} · Cierre hasta {fmtTime(cycle.validUntil)}
+        Mercado de {fmtDate(m.opensAt)} a {fmtTime(m.closesAt)} · Cierre hasta {fmtTime(cycle.validUntil)}
       </p>
     )
   }
   return (
     <p className="mt-1 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-      Ventana: {cycle.windowOpensAt ? `${fmtDate(cycle.windowOpensAt)} – ${fmtTime(cycle.windowClosesAt)}` : '—'}
+      Ventana: {cycle.windowOpensAt ? `de ${fmtDate(cycle.windowOpensAt)} a ${fmtTime(cycle.windowClosesAt)}` : EMPTY}
     </p>
   )
 }
@@ -110,7 +110,7 @@ function CycleCard({ cycle, defaultOpen, live }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ReportBadge cycle={cycle} />
-          <Badge tone="active">Créditos al cierre {cycle.finalBalances?.budget == null ? '—' : `${fmt(cycle.finalBalances.budget)} CR`}</Badge>
+          <Badge tone="active">Créditos al cierre {cycle.finalBalances?.budget == null ? EMPTY : `${fmt(cycle.finalBalances.budget)} CR`}</Badge>
         </div>
       </div>
 
@@ -281,7 +281,7 @@ function FundingSection({ funding, highlighted }) {
 const OFFER_STATUS = { active: { label: 'Vigente', tone: 'active' }, withdrawn: { label: 'Retirada', tone: 'neutral' }, closed: { label: 'Cerrada', tone: 'neutral' } }
 
 function OfferSection({ offer }) {
-  const status = OFFER_STATUS[offer?.status] ?? { label: offer?.status ?? '—', tone: 'neutral' }
+  const status = OFFER_STATUS[offer?.status] ?? { label: offer?.status ?? EMPTY, tone: 'neutral' }
   return (
     <section>
       <h4 className={sectionTitle}>Oferta publicada</h4>

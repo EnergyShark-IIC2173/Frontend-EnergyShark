@@ -148,6 +148,25 @@
     }
   }
 
+  /* Tiburón ocasional del login (DF-036): cruza de derecha a izquierda en ~15 s y desaparece el resto del ciclo. */
+  --animate-shark-cruise: shark-cruise 48s linear 3s infinite backwards;
+
+  @keyframes shark-cruise {
+    0% {
+      opacity: 0;
+      transform: translateX(100vw);
+    }
+    3%,
+    28% {
+      opacity: 0.5;
+    }
+    31%,
+    100% {
+      opacity: 0;
+      transform: translateX(-6rem);
+    }
+  }
+
   @keyframes rise-in {
     from {
       opacity: 0;

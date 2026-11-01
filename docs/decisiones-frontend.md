@@ -721,7 +721,7 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - cada capa suma un vaivén vertical lento (`sea-bob`, de 7 a 11 s) al avance horizontal, y una segunda línea más tenue que la acompaña como textura de oleaje;
   - las capas de abajo son más altas, rápidas y marcadas.
 - **Tiburón ocasional:**
-  - la aleta del isotipo, chica y translúcida (opacidad 0,45), cruza la pantalla de derecha a izquierda (hacia donde apunta, DF-034) sobre la cuarta ola y se mece con ella;
+  - la aleta del isotipo, chica y translúcida (opacidad 0,45), cruza la pantalla de derecha a izquierda (hacia donde apunta, DF-034) sobre la quinta ola (bajo la tarjeta, para que no quede tapado) y se mece con ella;
   - el cruce dura unos 15 s dentro de un ciclo de 48 s; el resto del tiempo no está;
   - aparece y se va con un fundido;
   - es decorativo (`aria-hidden`) y con "Reducir movimiento" no aparece.

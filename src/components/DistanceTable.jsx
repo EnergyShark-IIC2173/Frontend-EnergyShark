@@ -5,7 +5,7 @@ import { disabledRoutes, distanceKm, transportPerKwh } from '../lib/transport'
 import { Badge } from './ui/Badge'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { TableCard } from './ui/TableCard'
-import { RefreshButton, ViewHeader } from './ui/ViewHeader'
+import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
 import { td, th, tr } from './ui/classes'
 
 // RF02: la tabla se ve "actualizada cuando la central publique cambios" (DF-015). Transporte por kWh y rutas
@@ -38,8 +38,8 @@ export function DistanceTable() {
     content = (
       <>
       {disabled.length > 0 ? (
-        <p role="status" className="flex flex-wrap items-center gap-2 rounded-xl border border-pink/40 bg-pink/10 px-4 py-3 text-sm text-text-h">
-          <Badge tone="pink">{disabled.length} {disabled.length === 1 ? 'ruta deshabilitada' : 'rutas deshabilitadas'}</Badge>
+        <p role="status" className="flex flex-wrap items-center gap-2 rounded-xl border border-coral/40 bg-coral/10 px-4 py-3 dark:bg-coral/15 text-sm text-ink dark:text-paper">
+          <Badge tone="error">{disabled.length} {disabled.length === 1 ? 'ruta deshabilitada' : 'rutas deshabilitadas'}</Badge>
           {disabled.join(', ')} · comprarles cobra la tarifa punitiva de la distance-table (DF-029).
         </p>
       ) : null}
@@ -55,15 +55,15 @@ export function DistanceTable() {
         </thead>
         <tbody>
           {entries.map(([destination, row]) => (
-            <tr key={destination} className={`${tr} ${row?.enabled === false ? 'bg-pink/10' : ''}`}>
-              <td className={`${td} font-semibold text-accent`}>{destination}</td>
+            <tr key={destination} className={`${tr} ${row?.enabled === false ? 'bg-coral/10' : ''}`}>
+              <td className={`${td} font-mono font-bold text-ink dark:text-paper`}>{destination}</td>
               <td className={`${td} whitespace-nowrap tabular-nums`}>{fmt(distanceKm(row), 0)}</td>
               <td className={`${td} whitespace-nowrap tabular-nums`}>{fmt(row?.transportCost, 6)}</td>
               <td className={`${td} whitespace-nowrap tabular-nums`}>
-                {row?.enabled === false ? <span className="text-pink-soft">Tarifa punitiva</span> : fmt(transportPerKwh(row))}
+                {row?.enabled === false ? <span className="text-coral-ink dark:text-coral">Tarifa punitiva</span> : fmt(transportPerKwh(row))}
               </td>
               <td className={td}>
-                <Badge tone={row?.enabled ? 'cyan' : 'pink'}>
+                <Badge tone={row?.enabled ? 'active' : 'error'}>
                   {row?.enabled ? 'Habilitado' : 'Deshabilitado'}
                 </Badge>
               </td>
@@ -78,7 +78,7 @@ export function DistanceTable() {
   return (
     <div className="flex w-full flex-col gap-6">
       <ViewHeader
-        title={data?.cityId ? `Conectividad de ${data.cityId}` : 'Conectividad'}
+        title={<><Marker>Conectividad</Marker>{data?.cityId ? <> de <span className="font-mono">{data.cityId}</span></> : null}</>}
         subtitle={`Última actualización: ${data?.updatedAt ? fmtDate(data.updatedAt) : 'sin datos aún'} · se revisa cada ${POLL_MS / 1000} s.`}
       >
         <RefreshButton onClick={reload} loading={loading} />

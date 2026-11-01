@@ -7,7 +7,7 @@ import { Badge } from './ui/Badge'
 import { Pagination } from './ui/Pagination'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { TableCard } from './ui/TableCard'
-import { RefreshButton, ViewHeader } from './ui/ViewHeader'
+import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
 import { inputBase, labelBase, td, th, tr } from './ui/classes'
 
 const LIMIT = 25
@@ -57,8 +57,8 @@ export function RejectedMessages() {
                   <td className={td}>
                     <Badge tone={k.tone}>{k.label}</Badge>
                   </td>
-                  <td className={`${td} font-mono text-xs whitespace-nowrap text-text-h`}>{orDash(msg.type)}</td>
-                  <td className={`${td} font-mono text-xs text-text-h`}>{orDash(msg.reason)}</td>
+                  <td className={`${td} font-mono text-xs whitespace-nowrap text-ink dark:text-paper`}>{orDash(msg.type)}</td>
+                  <td className={`${td} font-mono text-xs text-ink dark:text-paper`}>{orDash(msg.reason)}</td>
                   <td className={`${td} tabular-nums`}>{orDash(msg.code)}</td>
                   <td className={`${td} font-mono text-xs whitespace-nowrap`} title={msg.msgId ?? undefined}>{truncId(msg.msgId)}</td>
                   <td className={`${td} font-mono text-xs whitespace-nowrap`} title={msg.idpk ?? undefined}>{truncId(msg.idpk)}</td>
@@ -76,7 +76,7 @@ export function RejectedMessages() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <ViewHeader title="Registro de Duplicados y NACKs" subtitle={`Duplicados, NACKs y mensajes descartados (RF05). Se actualiza cada ${POLL_MS / 1000} s.`}>
+      <ViewHeader title={<>Registro de duplicados y <Marker>NACKs</Marker></>} subtitle={`Duplicados, NACKs y mensajes descartados (RF05). Se actualiza cada ${POLL_MS / 1000} s.`}>
         <div className="flex flex-col gap-2">
           <label htmlFor="rejected-kind" className={labelBase}>Tipo</label>
           <select

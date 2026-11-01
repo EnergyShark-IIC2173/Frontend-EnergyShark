@@ -6,11 +6,15 @@ import { LoginButton } from './components/LoginButton'
 import { LogoutButton } from './components/LogoutButton'
 import { CycleHistory } from './components/CycleHistory'
 import { DistanceTable } from './components/DistanceTable'
-import tiburonImg from './assets/tiburon.png'
 import { RejectedMessages } from './components/RejectedMessages'
-import { AuthScreen, LogoMark } from './components/ui/AuthScreen'
+import { AuthScreen } from './components/ui/AuthScreen'
 import { Icon } from './components/ui/Icon'
-import { btnSecondary, labelBase, navItemActive, navItemInactive } from './components/ui/classes'
+import { Logo, LogoMark } from './components/ui/Logo'
+import { LoadingDot } from './components/ui/States'
+import { ThemeSwitch } from './components/ui/ThemeSwitch'
+import {
+  btnSecondary, divider, labelBase, navItemActive, navItemInactive, surface, textAccent, textError, textPrimary, textSecondary,
+} from './components/ui/classes'
 
 function App() {
   const { isAuthenticated, isLoading, user } = useAuth0()
@@ -34,10 +38,10 @@ function App() {
   if (isLoading) return (
     <AuthScreen>
       <span className="flex justify-center">
-        <LogoMark src={tiburonImg} alt="Silueta de tiburón" size="lg" />
+        <LogoMark className="size-16" />
       </span>
-      <p className="mt-6 flex items-center justify-center gap-2 text-text-h">
-        <span aria-hidden="true" className="size-2 animate-pulse rounded-full bg-accent motion-reduce:animate-none" />
+      <p className={`mt-6 flex items-center justify-center gap-2 ${textPrimary}`}>
+        <LoadingDot />
         Cargando Auth0...
       </p>
     </AuthScreen>
@@ -45,42 +49,43 @@ function App() {
 
   return !isAuthenticated ? (
     <AuthScreen>
-      <span className="flex justify-center">
-        <LogoMark src={tiburonImg} alt="Silueta de tiburón" size="lg" />
-      </span>
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight text-text-h">EnergyShark</h1>
-      <p className="mt-2 text-sm text-text">Panel de operación energética de la ciudad</p>
+      <h1 className="flex justify-center">
+        <Logo size="xl" className="flex-col" />
+      </h1>
+      <p className={`mt-4 text-sm ${textSecondary}`}>
+        Panel de operación <span className={`marker ${textPrimary}`}>energética</span> de la ciudad
+      </p>
       <div className="mt-8">
         <LoginButton />
       </div>
     </AuthScreen>
   ) : (
-    <div className="grid min-h-svh grid-cols-[minmax(0,1fr)] grid-rows-[auto_auto_1fr_auto] md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-[auto_1fr_auto]">
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-border bg-bg px-4 py-3 md:col-span-2 md:px-6">
-        <div className="flex items-center gap-3">
-          <LogoMark src={tiburonImg} alt="Silueta de tiburón" size="sm" />
-          <h1 className="text-lg font-semibold tracking-tight text-text-h">EnergyShark</h1>
-        </div>
-        <div className="flex min-w-0 items-center gap-4">
-          <p className="grid text-right">
+    <div className="grid min-h-svh grid-cols-[minmax(0,1fr)] grid-rows-[auto_auto_1fr_auto] bg-paper md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-[auto_1fr_auto] dark:bg-ink">
+      <header className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b bg-paper px-4 py-3 md:col-span-2 md:px-6 dark:bg-ink ${divider}`}>
+        <h1>
+          <Logo size="sm" />
+        </h1>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+          <ThemeSwitch />
+          <p className="hidden min-w-0 text-right sm:grid">
             <span className={`whitespace-nowrap ${labelBase}`}>Sesión iniciada como</span>{' '}
-            <span className="truncate text-sm text-text-h">{user?.email}</span>
+            <span className={`truncate text-sm ${textPrimary}`}>{user?.email}</span>
           </p>
           <LogoutButton />
         </div>
       </header>
 
       {/* Navegación por pestañas */}
-      <nav aria-label="Secciones" className="flex gap-2 overflow-x-auto border-b border-border bg-panel px-4 py-3 md:row-start-2 md:flex-col md:gap-1 md:overflow-visible md:border-r md:border-b-0 md:p-4">
+      <nav aria-label="Secciones" className={`flex gap-2 overflow-x-auto border-b bg-paper px-4 py-3 md:row-start-2 md:flex-col md:gap-1 md:overflow-visible md:border-r md:border-b-0 md:p-4 dark:bg-ink ${divider}`}>
         <p className={`hidden px-3 pb-2 md:block ${labelBase}`}>Secciones</p>
-        <button 
+        <button
           onClick={() => setActiveView('history')}
           className={activeView === 'history' ? navItemActive : navItemInactive}
         >
           <Icon name="history" />
           Historial de Ciclos
         </button>
-        <button 
+        <button
           onClick={() => setActiveView('distance')}
           className={activeView === 'distance' ? navItemActive : navItemInactive}
         >
@@ -88,7 +93,7 @@ function App() {
           Conectividad
         </button>
 
-        <button 
+        <button
           onClick={() => setActiveView('rejected')}
           className={activeView === 'rejected' ? navItemActive : navItemInactive}
         >
@@ -97,7 +102,8 @@ function App() {
         </button>
       </nav>
 
-      <main className="min-w-0 px-4 py-6 md:col-start-2 md:row-span-2 md:row-start-2 md:px-8 md:py-8">
+      {/* Fondo de cuaderno detrás de las tarjetas, que son opacas (DF-030) */}
+      <main className="min-w-0 bg-paper px-4 py-6 dot-grid md:col-start-2 md:row-span-2 md:row-start-2 md:px-8 md:py-8 dark:bg-ink">
         <div className="mx-auto w-full max-w-6xl">
           {/* Renderizado condicional de las vistas */}
           {activeView === 'history' && <CycleHistory />}
@@ -107,10 +113,10 @@ function App() {
       </main>
 
       {/* Estado de la API: al fondo del sidebar desde md, al final del contenido en móvil (DF-011) */}
-      <aside aria-label="Estado de la API" className="border-t border-border bg-panel p-4 md:col-start-1 md:row-start-3 md:border-t-0 md:border-r">
-        <div className="rounded-2xl bg-surface p-4 shadow-card">
+      <aside aria-label="Estado de la API" className={`border-t bg-paper p-4 md:col-start-1 md:row-start-3 md:border-t-0 md:border-r dark:bg-ink ${divider}`}>
+        <div className={`rounded-2xl p-4 ${surface}`}>
           <p className={`flex items-center gap-2 ${labelBase}`}>
-            <Icon name="pulse" className="size-4 text-accent" />
+            <Icon name="pulse" className={`size-4 ${textAccent}`} />
             Estado de la API
           </p>
           <button onClick={checkHealth} className={`${btnSecondary} mt-3 w-full`}>
@@ -118,10 +124,10 @@ function App() {
           </button>
 
           {healthStatus && (
-            <p className="mt-3 font-mono text-xs break-all text-success">OK: {healthStatus}</p>
+            <p className={`mt-3 font-mono text-xs break-all ${textAccent}`}>OK: {healthStatus}</p>
           )}
           {error && (
-            <p className="mt-3 font-mono text-xs break-all text-danger">Error: {error}</p>
+            <p className={`mt-3 font-mono text-xs break-all ${textError}`}>Error: {error}</p>
           )}
         </div>
       </aside>

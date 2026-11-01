@@ -10,7 +10,7 @@ export const surface = 'border border-sand-200 bg-card edge-light dark:border-sa
 export const surfaceSoft = 'bg-sand-100 dark:bg-sand-800'
 export const divider = 'border-sand-200 dark:border-sand-800'
 
-const btnBase = 'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] focus-ring motion-safe:active:scale-[0.98] motion-reduce:transition-none'
+export const btnBase = 'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] focus-ring motion-safe:active:scale-[0.98] motion-reduce:transition-none'
 
 export const btnPrimary = `${btnBase} bg-accent text-ink hover:bg-accent-hover`
 export const btnSecondary = `${btnBase} border border-sand-200 bg-card ${textPrimary} hover:bg-sand-100 dark:border-sand-800 dark:bg-sand-900 dark:hover:bg-sand-800`

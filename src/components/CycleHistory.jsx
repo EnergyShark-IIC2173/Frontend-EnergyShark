@@ -14,12 +14,15 @@ import { Pagination } from './ui/Pagination'
 import { StatTile } from './ui/StatTile'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
-import { labelBase, sectionTitle } from './ui/classes'
+import { btnBase, btnPrimary, labelBase, sectionTitle } from './ui/classes'
 
 // Cada tarjeta es grande: 10 por página (DF-020). Polling suave solo en la página 1, donde está el ciclo en curso.
 // El listado trae la cabecera; el detalle se pide al abrir la tarjeta (DF-024).
 const LIMIT = 10
 const POLL_MS = 30_000
+// Botón de cerrar el detalle: tinta sobre papel (y al revés en oscuro), para que se distinga del primario.
+const btnClose = `${btnBase} bg-ink text-paper hover:bg-sand-800 dark:bg-paper dark:text-ink dark:hover:bg-sand-300`
+
 // Las tarjetas entran una tras otra, de arriba hacia abajo (DF-032). Solo al montarse: el polling no las re-anima.
 const STAGGER_MS = 70
 
@@ -124,9 +127,9 @@ function CycleCard({ cycle, highlight, live, enterDelay = 0, open, onOpen, onClo
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [open, onClose])
 
-  // Si al abrir se cerró otra tarjeta más arriba, esta sube: se vuelve a su inicio si quedó fuera de la pantalla.
+  // Al abrir (si se cerró otra más arriba, esta sube) o al cerrar desde el final de un detalle largo, la tarjeta
+  // puede quedar con su inicio fuera de la pantalla: se vuelve a él.
   useEffect(() => {
-    if (!open) return
     const card = cardRef.current
     if (card && card.getBoundingClientRect().top < 0) {
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -184,22 +187,26 @@ function CycleCard({ cycle, highlight, live, enterDelay = 0, open, onOpen, onClo
         </p>
       </div>
 
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={detailId}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (open) onClose()
-          else onOpen()
-        }}
-        className="mt-4 flex min-h-11 w-fit cursor-pointer items-center gap-2 rounded-lg text-sm font-semibold text-ink focus-ring dark:text-paper"
-      >
-        <Icon name="chevron" className={`size-4 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
-        {open ? 'Ocultar detalle' : 'Ver detalle del ciclo'}
-      </button>
       {/* Se monta solo abierto: una tarjeta cerrada no pide el detalle (DF-024). */}
       <div id={detailId}>{open ? <CycleDetail cycleId={cycle.cycleId} live={live} /> : null}</div>
+
+      {/* Abajo a la derecha: primario para abrir; al abrir baja al final del detalle y pasa a tinta (DF-032). */}
+      <div className="mt-5 flex justify-end">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={detailId}
+          onClick={(e) => {
+            e.stopPropagation()
+            if (open) onClose()
+            else onOpen()
+          }}
+          className={open ? btnClose : btnPrimary}
+        >
+          {open ? 'Cerrar detalle' : 'Ver detalle'}
+          <Icon name="chevron" className={`size-4 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
     </Card>
   )
 }

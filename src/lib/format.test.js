@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { EMPTY, fmt, fmtCountdown, fmtDate, fmtTime, orDash, truncId } from './format.js'
+import { EMPTY, fmt, fmtClock, fmtCountdown, fmtDate, fmtDay, fmtTime, orDash, truncId } from './format.js'
 
 test('fmt usa separadores es-CL y redondea a 2 decimales', () => {
   assert.equal(fmt(119392553.0988), '119.392.553,1')
@@ -41,4 +41,10 @@ test('los nulos se muestran como "Sin dato", sin em-dash (DF-031)', () => {
   assert.equal(fmt(null), 'Sin dato')
   assert.equal(fmtTime(undefined), 'Sin dato')
   assert.doesNotMatch(EMPTY, /[—–]/)
+})
+
+test('fmtClock y fmtDay dan la hora y la fecha cortas (DF-033)', () => {
+  assert.equal(fmtClock('2026-11-01T14:05:59Z', { timeZone: 'UTC' }), '14:05')
+  assert.equal(fmtDay('2026-11-01T14:05:59Z', { timeZone: 'UTC' }), '01-11-26')
+  assert.equal(fmtClock(null), EMPTY)
 })

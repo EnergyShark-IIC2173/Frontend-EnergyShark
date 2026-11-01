@@ -1,0 +1,384 @@
+import { getCycle } from '../../api/endpoints'
+import { useApiQuery } from '../../api/useApiQuery'
+import { buyerTotals, hasLegacyData, matchLastOperation, reportPending } from '../../lib/cycles'
+import { EMPTY, fmt, fmtDate, fmtTime, truncId } from '../../lib/format'
+import { paymentAmount, priceCap, round2 } from '../../lib/negotiation'
+import { bidState, directionLabel, negotiationStatus, origin, swapRole, swapStatus } from '../../lib/status'
+import { Badge } from '../ui/Badge'
+import { StatTile } from '../ui/StatTile'
+import { ErrorState, StaleNotice } from '../ui/States'
+import { labelBase, sectionTitle } from '../ui/classes'
+import { ReportBadge } from './parts'
+
+// Detalle de un ciclo (RF01), dentro del diálogo (DF-033). Se pide solo al abrir (DF-024); el ciclo en curso se
+// vuelve a pedir cada 30 s.
+const POLL_MS = 30_000
+
+// Un ciclo v3 trae los instantes del mercado (DF-027); uno de la E1, no.
+const isV3 = (cycle) => Boolean(cycle?.market || cycle?.statusStatement?.market)
+
+export function CycleDetail({ cycleId, live }) {
+  const { data: cycle, loading, error, reload, relogin } = useApiQuery(
+    (api) => getCycle(api, cycleId),
+    { cycleId },
+    { pollMs: live ? POLL_MS : null },
+  )
+
+  if (!cycle && loading) return <p role="status" className="mt-6 text-sm text-sand-600 dark:text-sand-400">Cargando detalle…</p>
+  if (!cycle && error) {
+    return (
+      <div className="mt-6">
+        <ErrorState title="No se pudo cargar el detalle del ciclo" error={error} onRetry={reload} onRelogin={relogin} />
+      </div>
+    )
+  }
+
+  const match = matchLastOperation(cycle)
+  const v3 = isV3(cycle)
+
+  return (
+    <div className="mt-6 flex flex-col gap-6 motion-safe:animate-section-in">
+      <StaleNotice error={error} />
+      <StatusStatementSection cycle={cycle} v3={v3} />
+      {v3 ? (
+        <>
+          <FundingSection funding={cycle.funding} highlighted={match?.section === 'funding'} />
+          <OfferSection offer={cycle.offer} />
+          <BidsSection title="Bids recibidos (como vendedor)" bids={cycle.bidsReceived} counterpartyKey="buyer" timeKey="receivedAt" empty="Sin bids recibidos." />
+          <BidsSection title="Bids enviados (como comprador)" bids={cycle.bidsSent} counterpartyKey="seller" timeKey="sentAt" empty="Sin bids enviados." />
+          <SwapsSection cycle={cycle} match={match} />
+          <ImbalanceSection settlement={cycle.imbalanceSettlement} highlighted={match?.section === 'imbalance'} />
+        </>
+      ) : null}
+      {hasLegacyData(cycle) ? (
+        <div className="flex flex-col gap-6 rounded-xl border border-sand-200 dark:border-sand-800 p-4">
+          <p className={labelBase}>Protocolo E1 (flujos retirados en la v3, DF-026)</p>
+          <TransfersSection cycle={cycle} match={match} />
+          <DemandsSection cycle={cycle} match={match} />
+          <NegotiationsSection cycle={cycle} match={match} />
+        </div>
+      ) : null}
+      <ReportSection cycle={cycle} />
+      <section>
+        <h4 className={sectionTitle}>Saldos al cierre</h4>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <StatTile label="Créditos" value={fmt(cycle.finalBalances?.budget)} unit="CR" tone="active" icon="wallet" />
+          <StatTile label="Energía" value={fmt(cycle.finalBalances?.energy)} unit="kWh" tone="category" icon="battery" />
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function StatusStatementSection({ cycle, v3 }) {
+  const ss = cycle.statusStatement
+  const energy = ss?.energy
+  const m = ss?.market
+  return (
+    <section>
+      <h4 className={sectionTitle}>Status-statement</h4>
+      {energy ? (
+        <>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile label="Generación" value={fmt(energy.generationCapacity)} unit="kWh" tone="active" icon="bolt" />
+            <StatTile label="Consumo" value={fmt(energy.consumption)} unit="kWh" tone="category" icon="plug" />
+            <StatTile label="Costo de generación" value={fmt(energy.generationCost)} unit="CR/kWh" tone="neutral" icon="wallet" />
+            {v3 ? <StatTile label="Vendible" value={fmt(energy.sellable)} unit="kWh" tone="active" icon="battery" /> : null}
+          </div>
+          {m ? (
+            <>
+              <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
+                Recompra {fmt(m.buybackPrice)} · Desbalance {fmt(m.imbalancePrice)} CR/kWh · Bid mínimo {fmt(m.minBid)} kWh
+              </p>
+              <p className="mt-1 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
+                Abre {fmtTime(m.opensAt)} · Última oferta {fmtTime(m.lastOfferAt)} · Último bid {fmtTime(m.lastBidAt)} ·
+                Cierre {fmtTime(m.closesAt)} · Válido hasta {fmtTime(ss.validUntil)}
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
+              Válido hasta {fmtDate(ss.validUntil)} · Tope de precio {fmt(priceCap(energy.generationCost))} cr/kWh
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-sand-600 dark:text-sand-400">Sin status-statement.</p>
+      )}
+    </section>
+  )
+}
+
+function OpList({ children }) {
+  return <ul className="mt-3 divide-y divide-sand-200 dark:divide-sand-800 overflow-hidden rounded-xl bg-sand-100 dark:bg-sand-800">{children}</ul>
+}
+
+// highlighted: ítem que corresponde a lastOperationApplied (DF-027 por referencia; DF-020 en ciclos E1).
+function OpItem({ dot, highlighted, children }) {
+  return (
+    <li className={`flex items-start gap-3 px-4 py-3 text-sm ${highlighted ? 'bg-accent/10 shadow-[inset_3px_0_0_var(--color-accent)] dark:bg-accent-soft' : ''}`}>
+      <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${dot}`} />
+      <div className="min-w-0 flex-1">{children}</div>
+      {highlighted ? <Badge tone="settled">Última operación</Badge> : null}
+    </li>
+  )
+}
+
+const Empty = ({ children }) => <p className="mt-3 text-sm text-sand-600 dark:text-sand-400">{children}</p>
+
+function FundingSection({ funding, highlighted }) {
+  return (
+    <section>
+      <h4 className={sectionTitle}>Financiamiento (transfer)</h4>
+      {!funding ? <Empty>Sin financiamiento recibido.</Empty> : (
+        <OpList>
+          <OpItem dot="bg-accent" highlighted={highlighted}>
+            <span className="font-semibold text-ink dark:text-paper tabular-nums">+{fmt(funding.quantity)} CR</span>
+            <span className="text-sand-600 dark:text-sand-400 tabular-nums">
+              {' '}· saldo {fmt(funding.balanceAfter)} CR · línea de crédito {fmt(funding.creditLine)} CR · {fmtDate(funding.receivedAt)}
+            </span>
+            {funding.penalty ? (
+              <span className="mt-1 block text-xs text-coral-ink dark:text-coral tabular-nums">
+                Multa por reporte faltante de {funding.penalty.forCycleId}: −{fmt(funding.penalty.amount)} CR (ya descontada)
+              </span>
+            ) : null}
+          </OpItem>
+        </OpList>
+      )}
+    </section>
+  )
+}
+
+const OFFER_STATUS = { active: { label: 'Vigente', tone: 'active' }, withdrawn: { label: 'Retirada', tone: 'neutral' }, closed: { label: 'Cerrada', tone: 'neutral' } }
+
+function OfferSection({ offer }) {
+  const status = OFFER_STATUS[offer?.status] ?? { label: offer?.status ?? EMPTY, tone: 'neutral' }
+  return (
+    <section>
+      <h4 className={sectionTitle}>Oferta publicada</h4>
+      {!offer ? <Empty>Sin oferta en este ciclo.</Empty> : (
+        <OpList>
+          <OpItem dot="bg-accent">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="font-mono font-bold text-ink dark:text-paper">{offer.offerId}</span>
+              <Badge tone={status.tone}>{status.label}</Badge>
+            </span>
+            <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
+              {fmt(offer.quantity)} kWh a {fmt(offer.pricePerEnergy)} CR/kWh · quedan {fmt(offer.remaining)} kWh · {fmtDate(offer.publishedAt)}
+            </span>
+          </OpItem>
+          {(offer.updates ?? []).map((u, i) => (
+            <OpItem key={`${u.type}-${i}`} dot="bg-sand-300 dark:bg-sand-700">
+              <span className="text-ink dark:text-paper">{u.type === 'offer-withdrawn' ? 'Oferta retirada' : 'Actualización'}</span>
+              <span className="text-sand-600 dark:text-sand-400 tabular-nums">
+                {u.type === 'offer-withdrawn' ? '' : ` · quedan ${fmt(u.remaining)} kWh a ${fmt(u.pricePerEnergy)} CR/kWh`} · {fmtTime(u.sentAt)}
+              </span>
+            </OpItem>
+          ))}
+        </OpList>
+      )}
+    </section>
+  )
+}
+
+function BidsSection({ title, bids, counterpartyKey, timeKey, empty }) {
+  const list = bids ?? []
+  return (
+    <section>
+      <h4 className={sectionTitle}>{title}</h4>
+      {list.length === 0 ? <Empty>{empty}</Empty> : (
+        <OpList>
+          {list.map((b) => {
+            const state = bidState(b.state)
+            return (
+              <OpItem key={b.idpk} dot="bg-lavender">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono font-bold text-ink dark:text-paper">{b[counterpartyKey]}</span>
+                  <span className="text-sand-600 dark:text-sand-400 tabular-nums">{fmt(b.quantity)} kWh · {b.offerId}</span>
+                  <Badge tone={state.tone}>{state.label}</Badge>
+                </span>
+                <span className="mt-1 block font-mono text-xs text-sand-600 dark:text-sand-400 tabular-nums" title={b.idpk}>
+                  idpk {truncId(b.idpk)} · {fmtTime(b[timeKey])}
+                  {b.swapId ? ` · ${b.swapId}` : ''}
+                </span>
+                {b.rejectReason ? (
+                  <span className="mt-1 block text-xs text-coral-ink dark:text-coral tabular-nums">
+                    {b.rejectReason}{b.available != null ? `: disponibles ${fmt(b.available)} kWh` : ''}
+                  </span>
+                ) : null}
+              </OpItem>
+            )
+          })}
+        </OpList>
+      )}
+    </section>
+  )
+}
+
+function SwapsSection({ cycle, match }) {
+  const swaps = cycle.swaps ?? []
+  const totals = buyerTotals(cycle)
+  return (
+    <section>
+      <h4 className={sectionTitle}>Swaps (estado final)</h4>
+      {swaps.length === 0 ? <Empty>Sin swaps en este ciclo.</Empty> : (
+        <>
+          <OpList>
+            {swaps.map((s) => {
+              const status = swapStatus(s.status)
+              return (
+                <OpItem key={s.swapId} dot={s.role === 'buyer' ? 'bg-lavender' : 'bg-accent'} highlighted={match?.section === 'swaps' && match.id === s.swapId}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-ink dark:text-paper"><span className="font-mono">{s.swapId}</span> · {swapRole(s.role)} con <span className="font-mono">{s.counterparty}</span></span>
+                    <Badge tone={status.tone}>{status.label}</Badge>
+                    {s.transport && !s.transport.routeEnabled ? <Badge tone="error">Ruta deshabilitada</Badge> : null}
+                  </span>
+                  <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
+                    {fmt(s.quantity)} kWh × {fmt(s.pricePerEnergy)} = {s.role === 'buyer' ? '−' : '+'}{fmt(s.amount)} CR
+                    {s.settledAt ? ` · liquidado ${fmtTime(s.settledAt)}` : ` · ${fmtTime(s.updatedAt)}`}
+                  </span>
+                  {s.transport ? (
+                    <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
+                      Transporte {fmt(s.transport.perEnergy)} CR/kWh → −{fmt(s.transport.total)} CR
+                    </span>
+                  ) : null}
+                </OpItem>
+              )
+            })}
+          </OpList>
+          {totals.kwh > 0 ? (
+            <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
+              Compras liquidadas: {fmt(totals.kwh)} kWh · energía {fmt(totals.energy)} CR · transporte {fmt(totals.transport)} CR
+            </p>
+          ) : null}
+        </>
+      )}
+    </section>
+  )
+}
+
+function ImbalanceSection({ settlement, highlighted }) {
+  return (
+    <section>
+      <h4 className={sectionTitle}>Liquidación al cierre (imbalance-settlement)</h4>
+      {!settlement ? <Empty>Sin liquidación todavía: llega después de closesAt.</Empty> : (
+        <OpList>
+          <OpItem dot={settlement.coverage < 0 ? 'bg-coral' : 'bg-accent'} highlighted={highlighted}>
+            <span className="text-ink dark:text-paper tabular-nums">
+              En cuenta {fmt(settlement.kwhHeld)} kWh · déficit {fmt(settlement.deficit)} kWh ·{' '}
+              <span className="font-semibold">cobertura {fmt(settlement.coverage)} kWh</span>
+            </span>
+            <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
+              {settlement.coverage < 0 ? 'Desbalance' : 'Recompra'} a {fmt(settlement.pricePerEnergy)} CR/kWh →{' '}
+              {settlement.total > 0 ? '+' : ''}{fmt(settlement.total)} CR · saldo {fmt(settlement.balanceAfter)} CR
+              {settlement.settledAt ? ` · ${fmtTime(settlement.settledAt)}` : ''}
+            </span>
+          </OpItem>
+        </OpList>
+      )}
+    </section>
+  )
+}
+
+function TransfersSection({ cycle, match }) {
+  const transfers = cycle.transfersReceived ?? []
+  return (
+    <section>
+      <h4 className={sectionTitle}>Fondos del ciclo (transfer)</h4>
+      {transfers.length === 0 ? <Empty>Sin transferencias de fondos.</Empty> : (
+        <OpList>
+          {transfers.map((t, i) => (
+            <OpItem key={t.msgId ?? i} dot="bg-accent" highlighted={match?.section === 'transfers' && match.index === i}>
+              <span className="font-semibold text-ink dark:text-paper tabular-nums">+{fmt(t.quantity)} cr</span>
+              <span className="text-sand-600 dark:text-sand-400 tabular-nums"> · {fmtDate(t.receivedAt)}</span>
+            </OpItem>
+          ))}
+        </OpList>
+      )}
+    </section>
+  )
+}
+
+function DemandsSection({ cycle, match }) {
+  const demands = cycle.demandStatementsApplied ?? []
+  return (
+    <section>
+      <h4 className={sectionTitle}>Demand-statements</h4>
+      {demands.length === 0 ? <Empty>Sin demand-statements.</Empty> : (
+        <OpList>
+          {demands.map((d, i) => {
+            // q > 0: la central entrega energía y el budget baja q·v; q < 0: la retira y el budget sube.
+            const delivers = d.quantity > 0
+            const budgetDelta = round2(-d.quantity * d.valuePerKwh)
+            return (
+              <OpItem key={d.msgId ?? i} dot="bg-lavender" highlighted={match?.section === 'demands' && match.index === i}>
+                <span className="text-ink dark:text-paper">
+                  {delivers ? 'Entrega' : 'Retiro'} de <span className="font-semibold tabular-nums">{fmt(Math.abs(d.quantity))} kWh</span> a {fmt(d.valuePerKwh)} cr/kWh
+                </span>
+                <span className="text-sand-600 dark:text-sand-400 tabular-nums"> · budget {budgetDelta > 0 ? '+' : ''}{fmt(budgetDelta)} cr · {fmtDate(d.appliedAt)}</span>
+              </OpItem>
+            )
+          })}
+        </OpList>
+      )}
+    </section>
+  )
+}
+
+function NegotiationsSection({ cycle, match }) {
+  const negotiations = cycle.voluntaryNegotiations ?? []
+  return (
+    <section>
+      <h4 className={sectionTitle}>Negociaciones voluntarias</h4>
+      {negotiations.length === 0 ? <Empty>Sin negociaciones en este ciclo.</Empty> : (
+        <OpList>
+          {negotiations.map((n) => {
+            const status = negotiationStatus(n.status)
+            const amount = paymentAmount(n)
+            return (
+              <OpItem key={n.id} dot="bg-lavender" highlighted={match?.section === 'negotiations' && match.id === n.id}>
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-ink dark:text-paper">#{n.id} {directionLabel(n.direction)}</span>
+                  <Badge tone={status.tone}>{status.label}</Badge>
+                  <Badge tone={origin(n.origin).tone}>{origin(n.origin).label}</Badge>
+                </span>
+                <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
+                  {fmt(n.quantity)} kWh · techo {fmt(n.pricePerEnergy)} · liquidado {fmt(n.settledPricePerEnergy)} cr/kWh
+                  {amount !== null ? ` · ${n.direction === 'give' ? 'ingreso +' : 'egreso −'}${fmt(amount)} cr` : ''}
+                  {n.paidAt ? ` · pagada ${fmtTime(n.paidAt)}` : ''}
+                </span>
+                {n.failureReason ? (
+                  <span className="mt-1 block text-xs text-coral-ink dark:text-coral" title={n.failureDetail ?? undefined}>
+                    {n.failureReason}{n.failureDetail ? `: ${n.failureDetail}` : ''}
+                  </span>
+                ) : null}
+              </OpItem>
+            )
+          })}
+        </OpList>
+      )}
+    </section>
+  )
+}
+
+function ReportSection({ cycle }) {
+  const report = cycle.negotiationReportSent
+  return (
+    <section>
+      <h4 className={sectionTitle}>Negotiation-report enviado</h4>
+      {report ? (
+        <>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <StatTile label="Créditos reportados" value={fmt(report.budgetBalance)} unit="CR" tone="active" icon="wallet" />
+            <StatTile label="Energía reportada" value={fmt(report.energyBalance)} unit="kWh" tone="category" icon="battery" />
+          </div>
+          <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">Enviado {fmtDate(report.sentAt)}</p>
+        </>
+      ) : (
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-sand-600 dark:text-sand-400">
+          <ReportBadge cycle={cycle} />
+          {reportPending(cycle) ? 'Se envía en el periodo de cierre, antes de validUntil.' : 'No se envió: multa de 50 000 CR en el próximo financiamiento.'}
+        </p>
+      )}
+    </section>
+  )
+}

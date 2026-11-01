@@ -1,44 +1,36 @@
-import { useEffect, useRef, useState } from 'react'
-import { getCycle, listCycles } from '../api/endpoints'
+import { useState } from 'react'
+import { listCycles } from '../api/endpoints'
 import { useApiQuery } from '../api/useApiQuery'
-import { buyerTotals, hasLegacyData, marketPhase, matchLastOperation, reportPending } from '../lib/cycles'
-import { EMPTY, fmt, fmtDate, fmtTime, truncId } from '../lib/format'
-import { paymentAmount, priceCap, round2 } from '../lib/negotiation'
-import {
-  bidState, cyclePhase, directionLabel, marketPhaseLabel, negotiationStatus, operationLabel, origin, swapRole, swapStatus,
-} from '../lib/status'
-import { Badge } from './ui/Badge'
-import { Card } from './ui/Card'
-import { Icon } from './ui/Icon'
+import { CurrentCycleCard, CycleTile } from './cycles/CycleCards'
+import { CycleDialog } from './cycles/CycleDialog'
 import { Pagination } from './ui/Pagination'
-import { StatTile } from './ui/StatTile'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { Marker, RefreshButton, ViewHeader } from './ui/ViewHeader'
-import { btnBase, btnPrimary, labelBase, sectionTitle } from './ui/classes'
 
-// Cada tarjeta es grande: 10 por página (DF-020). Polling suave solo en la página 1, donde está el ciclo en curso.
-// El listado trae la cabecera; el detalle se pide al abrir la tarjeta (DF-024).
-const LIMIT = 10
+// Grilla de ciclos (DF-033). 9 por página: en la página 1 el más reciente ocupa 2×2 desde xl (la mitad del ancho)
+// y caben 8 chicas exactas; en las demás, 3 filas de 3. El listado trae la cabecera; el detalle se pide al abrir el
+// diálogo (DF-024). Polling suave solo en la página 1, donde está el ciclo en curso.
+const LIMIT = 9
 const POLL_MS = 30_000
-// Botón de cerrar el detalle: tinta sobre papel (y al revés en oscuro), para que se distinga del primario.
-const btnClose = `${btnBase} bg-ink text-paper hover:bg-sand-800 dark:bg-paper dark:text-ink dark:hover:bg-sand-300`
-
 // Las tarjetas entran una tras otra, de arriba hacia abajo (DF-032). Solo al montarse: el polling no las re-anima.
-const STAGGER_MS = 70
+const STAGGER_MS = 60
 
-// Un ciclo v3 trae los instantes del mercado (DF-027); uno de la E1, no.
-const isV3 = (cycle) => Boolean(cycle?.market || cycle?.statusStatement?.market)
+const enter = (i) => ({
+  className: 'motion-safe:animate-rise-in motion-reduce:animate-fade-in',
+  style: { animationDelay: `${i * STAGGER_MS}ms` },
+})
 
 export function CycleHistory() {
   const [page, setPage] = useState(1)
-  // Un solo ciclo abierto a la vez (DF-032): la página no se alarga con varios detalles.
-  const [openId, setOpenId] = useState(null)
+  // Ciclo abierto en el diálogo y la tarjeta desde la que crece (DF-033).
+  const [selected, setSelected] = useState(null)
   const { data, loading, error, reload, relogin } = useApiQuery(
     (api) => listCycles(api, { page, limit: LIMIT }),
     { page },
     { pollMs: page === 1 ? POLL_MS : null },
   )
   const cycles = data?.data ?? []
+  const open = (cycleId) => (origin) => setSelected({ cycleId, origin })
 
   let content
   if (!data && loading) content = <LoadingState label="Cargando ciclos…" />
@@ -46,21 +38,21 @@ export function CycleHistory() {
   else if (cycles.length === 0) {
     content = <EmptyState title="Aún no hay ciclos">Aparecen cuando la central abre el primer ciclo de la ciudad.</EmptyState>
   } else {
+    const [first, ...rest] = cycles
+    const featured = page === 1
     content = (
       <>
-        {cycles.map((cycle, i) => (
-          <CycleCard
-            key={cycle.cycleId}
-            cycle={cycle}
-            highlight={i === 0}
-            live={page === 1 && i === 0}
-            enterDelay={i * STAGGER_MS}
-            open={openId === cycle.cycleId}
-            onOpen={() => setOpenId(cycle.cycleId)}
-            onClose={() => setOpenId((id) => (id === cycle.cycleId ? null : id))}
-          />
-        ))}
-        <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={(p) => { setOpenId(null); setPage(p) }} disabled={loading} />
+        <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${featured ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
+          {featured ? (
+            <CurrentCycleCard key={first.cycleId} cycle={first} onOpen={open(first.cycleId)} {...enter(0)} className={`md:col-span-2 xl:row-span-2 ${enter(0).className}`} />
+          ) : (
+            <CycleTile key={first.cycleId} cycle={first} onOpen={open(first.cycleId)} {...enter(0)} />
+          )}
+          {rest.map((cycle, i) => (
+            <CycleTile key={cycle.cycleId} cycle={cycle} onOpen={open(cycle.cycleId)} {...enter(i + 1)} />
+          ))}
+        </div>
+        <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={setPage} disabled={loading} />
       </>
     )
   }
@@ -75,504 +67,14 @@ export function CycleHistory() {
       </ViewHeader>
       <StaleNotice error={data ? error : null} />
       {content}
+      {selected ? (
+        <CycleDialog
+          cycleId={selected.cycleId}
+          origin={selected.origin}
+          live={page === 1 && selected.cycleId === cycles[0]?.cycleId}
+          onClose={() => setSelected(null)}
+        />
+      ) : null}
     </div>
-  )
-}
-
-function ReportBadge({ cycle }) {
-  if (cycle.negotiationReportSent) return <Badge tone="settled">Reporte enviado</Badge>
-  if (reportPending(cycle)) return <Badge tone="neutral">Reporte pendiente</Badge>
-  return <Badge tone="error">Reporte no enviado</Badge>
-}
-
-function PhaseBadge({ cycle }) {
-  const v3 = marketPhase(cycle)
-  const phase = v3 ? marketPhaseLabel(v3) : cyclePhase(cycle.phase)
-  return <Badge tone={phase.tone}>{phase.label}</Badge>
-}
-
-function WindowLine({ cycle }) {
-  const m = cycle.market
-  if (m) {
-    return (
-      <p className="mt-1 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-        Mercado de {fmtDate(m.opensAt)} a {fmtTime(m.closesAt)} · Cierre hasta {fmtTime(cycle.validUntil)}
-      </p>
-    )
-  }
-  return (
-    <p className="mt-1 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-      Ventana: {cycle.windowOpensAt ? `de ${fmtDate(cycle.windowOpensAt)} a ${fmtTime(cycle.windowClosesAt)}` : EMPTY}
-    </p>
-  )
-}
-
-// Todas parten cerradas, también la primera (DF-032): el más reciente solo se destaca con el borde.
-// Con mouse o dedo, apretar cualquier parte de una tarjeta cerrada la abre, y apretar fuera de la abierta la cierra.
-// Con teclado, el botón de detalle hace lo mismo (aria-expanded).
-function CycleCard({ cycle, highlight, live, enterDelay = 0, open, onOpen, onClose }) {
-  const cardRef = useRef(null)
-  const last = cycle.lastOperationApplied
-  const counts = cycle.counts
-  const detailId = `cycle-detail-${cycle.cycleId}`
-
-  useEffect(() => {
-    if (!open) return undefined
-    const onPointerDown = (e) => {
-      // La barra de scroll de la página entrega <html> como destino: no cuenta como "afuera".
-      if (e.target === document.documentElement) return
-      if (!cardRef.current?.contains(e.target)) onClose()
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [open, onClose])
-
-  // Al abrir (si se cerró otra más arriba, esta sube) o al cerrar desde el final de un detalle largo, la tarjeta
-  // puede quedar con su inicio fuera de la pantalla: se vuelve a él.
-  useEffect(() => {
-    const card = cardRef.current
-    if (card && card.getBoundingClientRect().top < 0) {
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      card.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' })
-    }
-  }, [open])
-
-  function openFromCard() {
-    // No abrir si el usuario estaba seleccionando texto de la cabecera.
-    if (window.getSelection()?.toString()) return
-    onOpen()
-  }
-
-  return (
-    <Card
-      ref={cardRef}
-      highlight={highlight}
-      onClick={open ? undefined : openFromCard}
-      className={`scroll-mt-20 motion-safe:animate-rise-in motion-reduce:animate-fade-in md:scroll-mt-6 ${open ? '' : 'cursor-pointer'} ${open || highlight ? '' : 'transition-colors duration-150 hover:border-sand-300 dark:hover:border-sand-700'}`}
-      style={{ animationDelay: `${enterDelay}ms` }}
-    >
-      {/* Cabecera siempre visible: RF01 exige identificar la última operación aplicada (DF-020). */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className={labelBase}>Ciclo</p>
-          <h3 className="mt-1 flex flex-wrap items-center gap-2 font-mono text-xl font-bold text-accent-ink dark:text-accent">
-            {cycle.cycleId}
-            <PhaseBadge cycle={cycle} />
-          </h3>
-          <WindowLine cycle={cycle} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ReportBadge cycle={cycle} />
-          <Badge tone="active">Créditos al cierre {cycle.finalBalances?.budget == null ? EMPTY : `${fmt(cycle.finalBalances.budget)} CR`}</Badge>
-        </div>
-      </div>
-
-      {counts ? (
-        <p className="mt-3 flex flex-wrap gap-2">
-          <Badge>{counts.bidsReceived} bids recibidos</Badge>
-          <Badge>{counts.bidsSent} bids enviados</Badge>
-          <Badge tone="settled">{counts.swapsSettled} swaps liquidados</Badge>
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex items-center gap-3 rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 dark:bg-accent-soft">
-        <Icon name="bolt" className="size-5 text-accent-ink dark:text-accent" />
-        <p className="text-sm text-ink dark:text-paper">
-          <span className={`${labelBase} mr-2`}>Última operación aplicada</span>
-          {last ? (
-            <span className="font-semibold tabular-nums">{operationLabel(last.type)} · {fmtDate(last.appliedAt)}</span>
-          ) : (
-            <span>Ninguna todavía</span>
-          )}
-        </p>
-      </div>
-
-      {/* Se monta solo abierto: una tarjeta cerrada no pide el detalle (DF-024). */}
-      <div id={detailId}>{open ? <CycleDetail cycleId={cycle.cycleId} live={live} /> : null}</div>
-
-      {/* Abajo a la derecha: primario para abrir; al abrir baja al final del detalle y pasa a tinta (DF-032). */}
-      <div className="mt-5 flex justify-end">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={detailId}
-          onClick={(e) => {
-            e.stopPropagation()
-            if (open) onClose()
-            else onOpen()
-          }}
-          className={open ? btnClose : btnPrimary}
-        >
-          {open ? 'Cerrar detalle' : 'Ver detalle'}
-          <Icon name="chevron" className={`size-4 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
-    </Card>
-  )
-}
-
-function CycleDetail({ cycleId, live }) {
-  const { data: cycle, loading, error, reload, relogin } = useApiQuery(
-    (api) => getCycle(api, cycleId),
-    { cycleId },
-    { pollMs: live ? POLL_MS : null },
-  )
-
-  if (!cycle && loading) return <p role="status" className="mt-6 text-sm text-sand-600 dark:text-sand-400">Cargando detalle…</p>
-  if (!cycle && error) {
-    return (
-      <div className="mt-6">
-        <ErrorState title="No se pudo cargar el detalle del ciclo" error={error} onRetry={reload} onRelogin={relogin} />
-      </div>
-    )
-  }
-
-  const match = matchLastOperation(cycle)
-  const v3 = isV3(cycle)
-
-  return (
-    <div className="mt-6 flex flex-col gap-6 motion-safe:animate-section-in">
-      <StaleNotice error={error} />
-      <StatusStatementSection cycle={cycle} v3={v3} />
-      {v3 ? (
-        <>
-          <FundingSection funding={cycle.funding} highlighted={match?.section === 'funding'} />
-          <OfferSection offer={cycle.offer} />
-          <BidsSection title="Bids recibidos (como vendedor)" bids={cycle.bidsReceived} counterpartyKey="buyer" timeKey="receivedAt" empty="Sin bids recibidos." />
-          <BidsSection title="Bids enviados (como comprador)" bids={cycle.bidsSent} counterpartyKey="seller" timeKey="sentAt" empty="Sin bids enviados." />
-          <SwapsSection cycle={cycle} match={match} />
-          <ImbalanceSection settlement={cycle.imbalanceSettlement} highlighted={match?.section === 'imbalance'} />
-        </>
-      ) : null}
-      {hasLegacyData(cycle) ? (
-        <div className="flex flex-col gap-6 rounded-xl border border-sand-200 dark:border-sand-800 p-4">
-          <p className={labelBase}>Protocolo E1 (flujos retirados en la v3, DF-026)</p>
-          <TransfersSection cycle={cycle} match={match} />
-          <DemandsSection cycle={cycle} match={match} />
-          <NegotiationsSection cycle={cycle} match={match} />
-        </div>
-      ) : null}
-      <ReportSection cycle={cycle} />
-      <section>
-        <h4 className={sectionTitle}>Saldos al cierre</h4>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <StatTile label="Créditos" value={fmt(cycle.finalBalances?.budget)} unit="CR" tone="active" icon="wallet" />
-          <StatTile label="Energía" value={fmt(cycle.finalBalances?.energy)} unit="kWh" tone="category" icon="battery" />
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function StatusStatementSection({ cycle, v3 }) {
-  const ss = cycle.statusStatement
-  const energy = ss?.energy
-  const m = ss?.market
-  return (
-    <section>
-      <h4 className={sectionTitle}>Status-statement</h4>
-      {energy ? (
-        <>
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatTile label="Generación" value={fmt(energy.generationCapacity)} unit="kWh" tone="active" icon="bolt" />
-            <StatTile label="Consumo" value={fmt(energy.consumption)} unit="kWh" tone="category" icon="plug" />
-            <StatTile label="Costo de generación" value={fmt(energy.generationCost)} unit="CR/kWh" tone="neutral" icon="wallet" />
-            {v3 ? <StatTile label="Vendible" value={fmt(energy.sellable)} unit="kWh" tone="active" icon="battery" /> : null}
-          </div>
-          {m ? (
-            <>
-              <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-                Recompra {fmt(m.buybackPrice)} · Desbalance {fmt(m.imbalancePrice)} CR/kWh · Bid mínimo {fmt(m.minBid)} kWh
-              </p>
-              <p className="mt-1 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-                Abre {fmtTime(m.opensAt)} · Última oferta {fmtTime(m.lastOfferAt)} · Último bid {fmtTime(m.lastBidAt)} ·
-                Cierre {fmtTime(m.closesAt)} · Válido hasta {fmtTime(ss.validUntil)}
-              </p>
-            </>
-          ) : (
-            <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-              Válido hasta {fmtDate(ss.validUntil)} · Tope de precio {fmt(priceCap(energy.generationCost))} cr/kWh
-            </p>
-          )}
-        </>
-      ) : (
-        <p className="mt-3 text-sm text-sand-600 dark:text-sand-400">Sin status-statement.</p>
-      )}
-    </section>
-  )
-}
-
-function OpList({ children }) {
-  return <ul className="mt-3 divide-y divide-sand-200 dark:divide-sand-800 overflow-hidden rounded-xl bg-sand-100 dark:bg-sand-800">{children}</ul>
-}
-
-// highlighted: ítem que corresponde a lastOperationApplied (DF-027 por referencia; DF-020 en ciclos E1).
-function OpItem({ dot, highlighted, children }) {
-  return (
-    <li className={`flex items-start gap-3 px-4 py-3 text-sm ${highlighted ? 'bg-accent/10 shadow-[inset_3px_0_0_var(--color-accent)] dark:bg-accent-soft' : ''}`}>
-      <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${dot}`} />
-      <div className="min-w-0 flex-1">{children}</div>
-      {highlighted ? <Badge tone="settled">Última operación</Badge> : null}
-    </li>
-  )
-}
-
-const Empty = ({ children }) => <p className="mt-3 text-sm text-sand-600 dark:text-sand-400">{children}</p>
-
-function FundingSection({ funding, highlighted }) {
-  return (
-    <section>
-      <h4 className={sectionTitle}>Financiamiento (transfer)</h4>
-      {!funding ? <Empty>Sin financiamiento recibido.</Empty> : (
-        <OpList>
-          <OpItem dot="bg-accent" highlighted={highlighted}>
-            <span className="font-semibold text-ink dark:text-paper tabular-nums">+{fmt(funding.quantity)} CR</span>
-            <span className="text-sand-600 dark:text-sand-400 tabular-nums">
-              {' '}· saldo {fmt(funding.balanceAfter)} CR · línea de crédito {fmt(funding.creditLine)} CR · {fmtDate(funding.receivedAt)}
-            </span>
-            {funding.penalty ? (
-              <span className="mt-1 block text-xs text-coral-ink dark:text-coral tabular-nums">
-                Multa por reporte faltante de {funding.penalty.forCycleId}: −{fmt(funding.penalty.amount)} CR (ya descontada)
-              </span>
-            ) : null}
-          </OpItem>
-        </OpList>
-      )}
-    </section>
-  )
-}
-
-const OFFER_STATUS = { active: { label: 'Vigente', tone: 'active' }, withdrawn: { label: 'Retirada', tone: 'neutral' }, closed: { label: 'Cerrada', tone: 'neutral' } }
-
-function OfferSection({ offer }) {
-  const status = OFFER_STATUS[offer?.status] ?? { label: offer?.status ?? EMPTY, tone: 'neutral' }
-  return (
-    <section>
-      <h4 className={sectionTitle}>Oferta publicada</h4>
-      {!offer ? <Empty>Sin oferta en este ciclo.</Empty> : (
-        <OpList>
-          <OpItem dot="bg-accent">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="font-mono font-bold text-ink dark:text-paper">{offer.offerId}</span>
-              <Badge tone={status.tone}>{status.label}</Badge>
-            </span>
-            <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
-              {fmt(offer.quantity)} kWh a {fmt(offer.pricePerEnergy)} CR/kWh · quedan {fmt(offer.remaining)} kWh · {fmtDate(offer.publishedAt)}
-            </span>
-          </OpItem>
-          {(offer.updates ?? []).map((u, i) => (
-            <OpItem key={`${u.type}-${i}`} dot="bg-sand-300 dark:bg-sand-700">
-              <span className="text-ink dark:text-paper">{u.type === 'offer-withdrawn' ? 'Oferta retirada' : 'Actualización'}</span>
-              <span className="text-sand-600 dark:text-sand-400 tabular-nums">
-                {u.type === 'offer-withdrawn' ? '' : ` · quedan ${fmt(u.remaining)} kWh a ${fmt(u.pricePerEnergy)} CR/kWh`} · {fmtTime(u.sentAt)}
-              </span>
-            </OpItem>
-          ))}
-        </OpList>
-      )}
-    </section>
-  )
-}
-
-function BidsSection({ title, bids, counterpartyKey, timeKey, empty }) {
-  const list = bids ?? []
-  return (
-    <section>
-      <h4 className={sectionTitle}>{title}</h4>
-      {list.length === 0 ? <Empty>{empty}</Empty> : (
-        <OpList>
-          {list.map((b) => {
-            const state = bidState(b.state)
-            return (
-              <OpItem key={b.idpk} dot="bg-lavender">
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono font-bold text-ink dark:text-paper">{b[counterpartyKey]}</span>
-                  <span className="text-sand-600 dark:text-sand-400 tabular-nums">{fmt(b.quantity)} kWh · {b.offerId}</span>
-                  <Badge tone={state.tone}>{state.label}</Badge>
-                </span>
-                <span className="mt-1 block font-mono text-xs text-sand-600 dark:text-sand-400 tabular-nums" title={b.idpk}>
-                  idpk {truncId(b.idpk)} · {fmtTime(b[timeKey])}
-                  {b.swapId ? ` · ${b.swapId}` : ''}
-                </span>
-                {b.rejectReason ? (
-                  <span className="mt-1 block text-xs text-coral-ink dark:text-coral tabular-nums">
-                    {b.rejectReason}{b.available != null ? `: disponibles ${fmt(b.available)} kWh` : ''}
-                  </span>
-                ) : null}
-              </OpItem>
-            )
-          })}
-        </OpList>
-      )}
-    </section>
-  )
-}
-
-function SwapsSection({ cycle, match }) {
-  const swaps = cycle.swaps ?? []
-  const totals = buyerTotals(cycle)
-  return (
-    <section>
-      <h4 className={sectionTitle}>Swaps (estado final)</h4>
-      {swaps.length === 0 ? <Empty>Sin swaps en este ciclo.</Empty> : (
-        <>
-          <OpList>
-            {swaps.map((s) => {
-              const status = swapStatus(s.status)
-              return (
-                <OpItem key={s.swapId} dot={s.role === 'buyer' ? 'bg-lavender' : 'bg-accent'} highlighted={match?.section === 'swaps' && match.id === s.swapId}>
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-ink dark:text-paper"><span className="font-mono">{s.swapId}</span> · {swapRole(s.role)} con <span className="font-mono">{s.counterparty}</span></span>
-                    <Badge tone={status.tone}>{status.label}</Badge>
-                    {s.transport && !s.transport.routeEnabled ? <Badge tone="error">Ruta deshabilitada</Badge> : null}
-                  </span>
-                  <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
-                    {fmt(s.quantity)} kWh × {fmt(s.pricePerEnergy)} = {s.role === 'buyer' ? '−' : '+'}{fmt(s.amount)} CR
-                    {s.settledAt ? ` · liquidado ${fmtTime(s.settledAt)}` : ` · ${fmtTime(s.updatedAt)}`}
-                  </span>
-                  {s.transport ? (
-                    <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
-                      Transporte {fmt(s.transport.perEnergy)} CR/kWh → −{fmt(s.transport.total)} CR
-                    </span>
-                  ) : null}
-                </OpItem>
-              )
-            })}
-          </OpList>
-          {totals.kwh > 0 ? (
-            <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">
-              Compras liquidadas: {fmt(totals.kwh)} kWh · energía {fmt(totals.energy)} CR · transporte {fmt(totals.transport)} CR
-            </p>
-          ) : null}
-        </>
-      )}
-    </section>
-  )
-}
-
-function ImbalanceSection({ settlement, highlighted }) {
-  return (
-    <section>
-      <h4 className={sectionTitle}>Liquidación al cierre (imbalance-settlement)</h4>
-      {!settlement ? <Empty>Sin liquidación todavía: llega después de closesAt.</Empty> : (
-        <OpList>
-          <OpItem dot={settlement.coverage < 0 ? 'bg-coral' : 'bg-accent'} highlighted={highlighted}>
-            <span className="text-ink dark:text-paper tabular-nums">
-              En cuenta {fmt(settlement.kwhHeld)} kWh · déficit {fmt(settlement.deficit)} kWh ·{' '}
-              <span className="font-semibold">cobertura {fmt(settlement.coverage)} kWh</span>
-            </span>
-            <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
-              {settlement.coverage < 0 ? 'Desbalance' : 'Recompra'} a {fmt(settlement.pricePerEnergy)} CR/kWh →{' '}
-              {settlement.total > 0 ? '+' : ''}{fmt(settlement.total)} CR · saldo {fmt(settlement.balanceAfter)} CR
-              {settlement.settledAt ? ` · ${fmtTime(settlement.settledAt)}` : ''}
-            </span>
-          </OpItem>
-        </OpList>
-      )}
-    </section>
-  )
-}
-
-function TransfersSection({ cycle, match }) {
-  const transfers = cycle.transfersReceived ?? []
-  return (
-    <section>
-      <h4 className={sectionTitle}>Fondos del ciclo (transfer)</h4>
-      {transfers.length === 0 ? <Empty>Sin transferencias de fondos.</Empty> : (
-        <OpList>
-          {transfers.map((t, i) => (
-            <OpItem key={t.msgId ?? i} dot="bg-accent" highlighted={match?.section === 'transfers' && match.index === i}>
-              <span className="font-semibold text-ink dark:text-paper tabular-nums">+{fmt(t.quantity)} cr</span>
-              <span className="text-sand-600 dark:text-sand-400 tabular-nums"> · {fmtDate(t.receivedAt)}</span>
-            </OpItem>
-          ))}
-        </OpList>
-      )}
-    </section>
-  )
-}
-
-function DemandsSection({ cycle, match }) {
-  const demands = cycle.demandStatementsApplied ?? []
-  return (
-    <section>
-      <h4 className={sectionTitle}>Demand-statements</h4>
-      {demands.length === 0 ? <Empty>Sin demand-statements.</Empty> : (
-        <OpList>
-          {demands.map((d, i) => {
-            // q > 0: la central entrega energía y el budget baja q·v; q < 0: la retira y el budget sube.
-            const delivers = d.quantity > 0
-            const budgetDelta = round2(-d.quantity * d.valuePerKwh)
-            return (
-              <OpItem key={d.msgId ?? i} dot="bg-lavender" highlighted={match?.section === 'demands' && match.index === i}>
-                <span className="text-ink dark:text-paper">
-                  {delivers ? 'Entrega' : 'Retiro'} de <span className="font-semibold tabular-nums">{fmt(Math.abs(d.quantity))} kWh</span> a {fmt(d.valuePerKwh)} cr/kWh
-                </span>
-                <span className="text-sand-600 dark:text-sand-400 tabular-nums"> · budget {budgetDelta > 0 ? '+' : ''}{fmt(budgetDelta)} cr · {fmtDate(d.appliedAt)}</span>
-              </OpItem>
-            )
-          })}
-        </OpList>
-      )}
-    </section>
-  )
-}
-
-function NegotiationsSection({ cycle, match }) {
-  const negotiations = cycle.voluntaryNegotiations ?? []
-  return (
-    <section>
-      <h4 className={sectionTitle}>Negociaciones voluntarias</h4>
-      {negotiations.length === 0 ? <Empty>Sin negociaciones en este ciclo.</Empty> : (
-        <OpList>
-          {negotiations.map((n) => {
-            const status = negotiationStatus(n.status)
-            const amount = paymentAmount(n)
-            return (
-              <OpItem key={n.id} dot="bg-lavender" highlighted={match?.section === 'negotiations' && match.id === n.id}>
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-ink dark:text-paper">#{n.id} {directionLabel(n.direction)}</span>
-                  <Badge tone={status.tone}>{status.label}</Badge>
-                  <Badge tone={origin(n.origin).tone}>{origin(n.origin).label}</Badge>
-                </span>
-                <span className="mt-1 block text-sand-600 dark:text-sand-400 tabular-nums">
-                  {fmt(n.quantity)} kWh · techo {fmt(n.pricePerEnergy)} · liquidado {fmt(n.settledPricePerEnergy)} cr/kWh
-                  {amount !== null ? ` · ${n.direction === 'give' ? 'ingreso +' : 'egreso −'}${fmt(amount)} cr` : ''}
-                  {n.paidAt ? ` · pagada ${fmtTime(n.paidAt)}` : ''}
-                </span>
-                {n.failureReason ? (
-                  <span className="mt-1 block text-xs text-coral-ink dark:text-coral" title={n.failureDetail ?? undefined}>
-                    {n.failureReason}{n.failureDetail ? `: ${n.failureDetail}` : ''}
-                  </span>
-                ) : null}
-              </OpItem>
-            )
-          })}
-        </OpList>
-      )}
-    </section>
-  )
-}
-
-function ReportSection({ cycle }) {
-  const report = cycle.negotiationReportSent
-  return (
-    <section>
-      <h4 className={sectionTitle}>Negotiation-report enviado</h4>
-      {report ? (
-        <>
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <StatTile label="Créditos reportados" value={fmt(report.budgetBalance)} unit="CR" tone="active" icon="wallet" />
-            <StatTile label="Energía reportada" value={fmt(report.energyBalance)} unit="kWh" tone="category" icon="battery" />
-          </div>
-          <p className="mt-2 text-sm text-sand-600 dark:text-sand-400 tabular-nums">Enviado {fmtDate(report.sentAt)}</p>
-        </>
-      ) : (
-        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-sand-600 dark:text-sand-400">
-          <ReportBadge cycle={cycle} />
-          {reportPending(cycle) ? 'Se envía en el periodo de cierre, antes de validUntil.' : 'No se envió: multa de 50 000 CR en el próximo financiamiento.'}
-        </p>
-      )}
-    </section>
   )
 }

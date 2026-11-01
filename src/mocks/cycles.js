@@ -117,6 +117,47 @@ function legacyCycle() {
   }
 }
 
+// Historial generado para ver la grilla y la paginación (DF-033): 40 ciclos cerrados, uno cada 20 min antes de
+// cycle-9431, alternando compras con déficit y ventas con sobrante. Las cifras varían con el índice.
+function historyCycle(now, k) {
+  const t0 = now - (24 + 20 * k) * MIN
+  const m = market(t0)
+  const at = (min) => iso(t0 + min * MIN)
+  const id = 9431 - k
+  const seller = k % 2 === 0
+  const qty = 4000 + ((k * 1370) % 9000)
+  const price = 300 + ((k * 17) % 120)
+  const budget = Math.round((2_000_000 + ((k * 731_337) % 3_000_000) - (seller ? 0 : 1_500_000)) * 100) / 100
+  const swap = {
+    swapId: `swp-h${id}`, role: seller ? 'seller' : 'buyer', counterparty: ['MET', 'COR', 'HGW', 'TAL'][k % 4], offerId: seller ? `OWN-${id}` : `MET-${id}`,
+    quantity: qty, pricePerEnergy: price, amount: qty * price, status: k % 5 === 0 ? 'expired' : 'settled', reason: null,
+    transport: seller ? null : { perEnergy: 60 + (k % 7) * 9.5, total: Math.round(qty * (60 + (k % 7) * 9.5) * 100) / 100, routeEnabled: k % 6 !== 0 },
+    settledAt: k % 5 === 0 ? null : at(2), updatedAt: at(2.1),
+  }
+  const bid = { idpk: `b9${String(id).padStart(11, '0')}-h`, offerId: swap.offerId, quantity: qty, state: swap.status === 'settled' ? 'settled' : 'expired', rejectReason: null, available: null, swapId: swap.swapId }
+  const coverage = seller ? 1500 + (k % 4) * 500 : -((k % 5) * 400)
+  return {
+    cycleId: `cycle-${id}`,
+    phase: 'closed',
+    market: { opensAt: m.opensAt, lastOfferAt: m.lastOfferAt, lastBidAt: m.lastBidAt, closesAt: m.closesAt, reportOpensAt: m.reportOpensAt },
+    validUntil: at(15),
+    statusStatement: {
+      energy: { generationCapacity: 1_230_000 + k * 1_000, consumption: 1_234_512, generationCost: 200 + (k % 9) * 5, sellable: seller ? qty + 2000 : 0 },
+      market: m,
+      validUntil: at(15),
+    },
+    funding: { msgId: `f1d0c0de-0000-4000-8000-00000000${id}`, quantity: 180_000 + (k % 3) * 120_000, penalty: null, balanceAfter: budget, creditLine: 360_000, receivedAt: at(0.3) },
+    offer: seller ? { offerId: swap.offerId, quantity: qty + 2000, pricePerEnergy: price, remaining: 2000, status: 'closed', publishedAt: at(0.6), updates: [] } : null,
+    bidsReceived: seller ? [{ ...bid, buyer: swap.counterparty, receivedAt: at(1.5), resolvedAt: at(2) }] : [],
+    bidsSent: seller ? [] : [{ ...bid, seller: swap.counterparty, sentAt: at(1.5), resolvedAt: at(2) }],
+    swaps: [swap],
+    imbalanceSettlement: { kwhHeld: 10_000, deficit: 10_000 - coverage, coverage, pricePerEnergy: coverage < 0 ? 735 : 220.5, total: Math.round(coverage * (coverage < 0 ? 735 : 220.5) * 100) / 100, balanceAfter: budget, settlementId: `a7000000-0000-4000-8000-00000000${id}`, settledAt: at(10.1) },
+    negotiationReportSent: k % 7 === 3 ? null : { budgetBalance: budget, energyBalance: 0, sentAt: at(10.6) },
+    finalBalances: { budget, energy: 0 },
+    lastOperationApplied: { type: 'imbalance-settlement', appliedAt: at(10.1), ref: { msgId: `a7000000-0000-4000-8000-00000000${id}` } },
+  }
+}
+
 const SUMMARY_KEYS = ['cycleId', 'phase', 'market', 'validUntil', 'windowOpensAt', 'windowClosesAt', 'lastOperationApplied', 'negotiationReportSent', 'finalBalances']
 
 function toSummary(cycle) {
@@ -131,7 +172,8 @@ function toSummary(cycle) {
 
 const all = () => {
   const now = Date.now()
-  return [sellerCycle(now), buyerCycle(now), legacyCycle()]
+  const history = Array.from({ length: 40 }, (_, i) => historyCycle(now, i + 1))
+  return [sellerCycle(now), buyerCycle(now), ...history, legacyCycle()]
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))

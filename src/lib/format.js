@@ -34,6 +34,20 @@ export function fmtTime(iso, { timeZone } = {}) {
   return d.toLocaleTimeString('es-CL', { timeStyle: 'medium', hourCycle: 'h23', ...(timeZone ? { timeZone } : {}) })
 }
 
+// Hora corta "14:05", para las tarjetas chicas de la grilla (DF-033).
+export function fmtClock(iso, { timeZone } = {}) {
+  const d = toDate(iso)
+  if (!d) return EMPTY
+  return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', ...(timeZone ? { timeZone } : {}) })
+}
+
+// Fecha corta "01-11-26".
+export function fmtDay(iso, { timeZone } = {}) {
+  const d = toDate(iso)
+  if (!d) return EMPTY
+  return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit', ...(timeZone ? { timeZone } : {}) })
+}
+
 // "en 12 min 05 s" hasta una fecha futura; null si ya pasó.
 export function fmtCountdown(iso, now = Date.now()) {
   const d = toDate(iso)

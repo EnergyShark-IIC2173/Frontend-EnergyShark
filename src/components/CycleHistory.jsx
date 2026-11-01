@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getCycle, listCycles } from '../api/endpoints'
 import { useApiQuery } from '../api/useApiQuery'
 import { buyerTotals, hasLegacyData, marketPhase, matchLastOperation, reportPending } from '../lib/cycles'
@@ -28,6 +28,8 @@ const isV3 = (cycle) => Boolean(cycle?.market || cycle?.statusStatement?.market)
 
 export function CycleHistory() {
   const [page, setPage] = useState(1)
+  // Un solo ciclo abierto a la vez (DF-032): la página no se alarga con varios detalles.
+  const [openId, setOpenId] = useState(null)
   const { data, loading, error, reload, relogin } = useApiQuery(
     (api) => listCycles(api, { page, limit: LIMIT }),
     { page },
@@ -44,9 +46,18 @@ export function CycleHistory() {
     content = (
       <>
         {cycles.map((cycle, i) => (
-          <CycleCard key={cycle.cycleId} cycle={cycle} highlight={i === 0} live={page === 1 && i === 0} enterDelay={i * STAGGER_MS} />
+          <CycleCard
+            key={cycle.cycleId}
+            cycle={cycle}
+            highlight={i === 0}
+            live={page === 1 && i === 0}
+            enterDelay={i * STAGGER_MS}
+            open={openId === cycle.cycleId}
+            onOpen={() => setOpenId(cycle.cycleId)}
+            onClose={() => setOpenId((id) => (id === cycle.cycleId ? null : id))}
+          />
         ))}
-        <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={setPage} disabled={loading} />
+        <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={(p) => { setOpenId(null); setPage(p) }} disabled={loading} />
       </>
     )
   }
@@ -94,13 +105,49 @@ function WindowLine({ cycle }) {
 }
 
 // Todas parten cerradas, también la primera (DF-032): el más reciente solo se destaca con el borde.
-function CycleCard({ cycle, highlight, live, enterDelay = 0 }) {
-  const [open, setOpen] = useState(false)
+// Con mouse o dedo, apretar cualquier parte de una tarjeta cerrada la abre, y apretar fuera de la abierta la cierra.
+// Con teclado, el botón de detalle hace lo mismo (aria-expanded).
+function CycleCard({ cycle, highlight, live, enterDelay = 0, open, onOpen, onClose }) {
+  const cardRef = useRef(null)
   const last = cycle.lastOperationApplied
   const counts = cycle.counts
+  const detailId = `cycle-detail-${cycle.cycleId}`
+
+  useEffect(() => {
+    if (!open) return undefined
+    const onPointerDown = (e) => {
+      // La barra de scroll de la página entrega <html> como destino: no cuenta como "afuera".
+      if (e.target === document.documentElement) return
+      if (!cardRef.current?.contains(e.target)) onClose()
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open, onClose])
+
+  // Si al abrir se cerró otra tarjeta más arriba, esta sube: se vuelve a su inicio si quedó fuera de la pantalla.
+  useEffect(() => {
+    if (!open) return
+    const card = cardRef.current
+    if (card && card.getBoundingClientRect().top < 0) {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      card.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' })
+    }
+  }, [open])
+
+  function openFromCard() {
+    // No abrir si el usuario estaba seleccionando texto de la cabecera.
+    if (window.getSelection()?.toString()) return
+    onOpen()
+  }
 
   return (
-    <Card highlight={highlight} className="motion-safe:animate-rise-in motion-reduce:animate-fade-in" style={{ animationDelay: `${enterDelay}ms` }}>
+    <Card
+      ref={cardRef}
+      highlight={highlight}
+      onClick={open ? undefined : openFromCard}
+      className={`scroll-mt-20 motion-safe:animate-rise-in motion-reduce:animate-fade-in md:scroll-mt-6 ${open ? '' : 'cursor-pointer'} ${open || highlight ? '' : 'transition-colors duration-150 hover:border-sand-300 dark:hover:border-sand-700'}`}
+      style={{ animationDelay: `${enterDelay}ms` }}
+    >
       {/* Cabecera siempre visible: RF01 exige identificar la última operación aplicada (DF-020). */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -137,15 +184,22 @@ function CycleCard({ cycle, highlight, live, enterDelay = 0 }) {
         </p>
       </div>
 
-      <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)} className="group mt-4">
-        <summary className={`flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-lg text-sm font-semibold text-ink dark:text-paper [&::-webkit-details-marker]:hidden focus-ring`}>
-          <Icon name="chevron" className="size-4 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none" />
-          <span className="group-open:hidden">Ver detalle del ciclo</span>
-          <span className="hidden group-open:inline">Ocultar detalle</span>
-        </summary>
-        {/* Se monta solo abierto: una tarjeta cerrada no pide el detalle (DF-024). */}
-        {open ? <CycleDetail cycleId={cycle.cycleId} live={live} /> : null}
-      </details>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={detailId}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (open) onClose()
+          else onOpen()
+        }}
+        className="mt-4 flex min-h-11 w-fit cursor-pointer items-center gap-2 rounded-lg text-sm font-semibold text-ink focus-ring dark:text-paper"
+      >
+        <Icon name="chevron" className={`size-4 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
+        {open ? 'Ocultar detalle' : 'Ver detalle del ciclo'}
+      </button>
+      {/* Se monta solo abierto: una tarjeta cerrada no pide el detalle (DF-024). */}
+      <div id={detailId}>{open ? <CycleDetail cycleId={cycle.cycleId} live={live} /> : null}</div>
     </Card>
   )
 }

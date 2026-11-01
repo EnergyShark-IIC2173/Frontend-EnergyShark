@@ -1,50 +1,218 @@
 @import "tailwindcss";
 
-/* Paleta del rediseño V6 (DF-008). Valores confirmados contra docs/design/idea_energyshark.png */
+/* Estética StudyLicc adaptada a EnergyShark (DF-030). Guía: docs/design/sistema-visual.md.
+   `dark:` se resuelve por la clase `.dark` de <html> (la pone src/lib/theme.js y el script de index.html),
+   no por prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-panel: #0f1739;
-  --color-bg: #171d45;
-  --color-surface: #1f2550;
-  --color-surface-hover: #272e5c;
-  --color-border: #2c3360;
+  --font-sans: 'Work Sans', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Work Sans', system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
 
-  --color-text-h: #ffffff;
-  --color-text: #aab0cc;
-  /* Solo labels en mayúsculas; nunca sobre surface-hover (4,14:1, DF-012) */
-  --color-muted: #8a90b8;
+  /* Claro. `paper`, `card`, `sand-100` y `sand-200` son más blancos que en StudyLicc: el crema no calza con un
+     dashboard (decisión de Esteban, DF-030). Contrastes en DF-030:
+     - `accent` sobre paper da 2,4:1: nunca como texto, solo fondos e íconos;
+     - `accent-ink` (5,65:1 sobre paper) es el verde para texto y foco en claro;
+     - `sand-600` (7,64:1) es el texto secundario en claro. */
+  --color-paper: #fafaf8;
+  --color-ink: #1c1a16;
+  --color-card: #ffffff;
 
-  --color-accent: #00c2ec;
-  --color-accent-from: #00e8f8;
-  --color-accent-to: #1e8ae5;
-  --color-frame-from: #1492e4;
-  --color-frame-to: #00e6f6;
+  --color-sand-100: #f4f3ef;
+  --color-sand-200: #e7e5df;
+  --color-sand-300: #d6cebc;
+  --color-sand-400: #ada493;
+  --color-sand-500: #6f6758;
+  --color-sand-600: #575042;
+  --color-sand-700: #423c31;
+  --color-sand-800: #332f27;
+  --color-sand-900: #26231d;
 
-  --color-pink: #ff2e6e;
-  --color-pink-soft: #ff80a8;
-  --color-magenta: #b5179e;
-  --color-violet: #6a4fd1;
-  --color-orange: #f95521;
-  --color-orange-soft: #ff8a5c;
-  --color-success: #34d399;
-  --color-danger: #ff80a8;
+  --color-accent: #2bb699;
+  --color-accent-hover: #249f85;
+  --color-accent-ink: #16715d;
 
-  --shadow-card: 0 8px 24px -8px rgb(0 0 0 / 0.45);
+  /* Solo el subrayador `.marker`. */
+  --color-marker: #ffd23f;
 
-  --font-sans: 'Segoe UI', system-ui, Roboto, sans-serif;
-  --font-mono: ui-monospace, Consolas, monospace;
+  /* coral: solo errores. rose: advertencias (duplicado, periodo de cierre). lavender: categoría (consumo). */
+  --color-coral: #ff6b4d;
+  --color-coral-ink: #b83a22;
+  --color-rose: #e07a8b;
+  --color-rose-ink: #b0445a;
+  --color-lavender: #a594cc;
+  --color-lavender-ink: #705aa6;
+
+  /* Chips tenues: solo en oscuro. En claro los chips son un tinte al 10 % del tono pleno, porque rose-ink sobre
+     rose-soft da 4,47:1 (DF-030). */
+  --color-accent-soft: #dcf3ec;
+  --color-rose-soft: #f7e3e7;
+  --color-lavender-soft: #ece8f5;
+
+  --animate-fade-in: fade-in 0.3s ease-out backwards;
+  --animate-section-in: section-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  --animate-pop-in: pop-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes section-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+  }
+}
+
+:root {
+  --dot: #e2e0d9;
+  --rule: #edece8;
+  --focus: var(--color-accent-ink);
+  --marker-band: var(--color-marker);
+  --shadow-pop: 0 12px 32px -16px rgba(28, 26, 22, 0.28);
+
+  /* Hex del oscuro con nombre propio; `.dark` los asigna a cada token por el rol que cumple. */
+  --oscuro-bg: #141822;
+  --oscuro-surface: #1c2130;
+  --oscuro-elevated: #272d3f;
+  --oscuro-strong: #3a4358;
+  --oscuro-edge: #3d4762;
+  --oscuro-text: #e7eaf1;
+  --oscuro-medium: #c9cfdc;
+  --oscuro-muted: #a3abbd;
+  --oscuro-dim: #858ea2;
+  --oscuro-accent: #4fdcb5;
+  --oscuro-accent-hover: #44c7a3;
+  --oscuro-rose: #f0abba;
+  --oscuro-lavender: #c4bcf2;
+  --oscuro-coral: #ff8a7a;
+  --oscuro-rose-soft: #3b2836;
+  --oscuro-lavender-soft: #2d2b4a;
+  --oscuro-accent-soft: #16393a;
+}
+
+/* Oscuro en azul tinta, elevación por luminosidad y sin sombras:
+   - `ink`: fondo (y el texto oscuro sobre el acento); `paper`: texto principal, nunca blanco puro;
+   - `sand-900`: superficie; `sand-800`/`sand-100`/`sand-200`: elevada, hover y borde;
+   - `sand-700`: borde fuerte; `sand-300`: texto medio; `sand-400`: secundario; `sand-500`/`sand-600`: atenuado.
+   `card`, `marker` y los `*-ink` no cambian. */
+.dark {
+  color-scheme: dark;
+  --color-ink: var(--oscuro-bg);
+  --color-paper: var(--oscuro-text);
+  --color-sand-100: var(--oscuro-elevated);
+  --color-sand-200: var(--oscuro-elevated);
+  --color-sand-300: var(--oscuro-medium);
+  --color-sand-400: var(--oscuro-muted);
+  --color-sand-500: var(--oscuro-dim);
+  --color-sand-600: var(--oscuro-dim);
+  --color-sand-700: var(--oscuro-strong);
+  --color-sand-800: var(--oscuro-elevated);
+  --color-sand-900: var(--oscuro-surface);
+  --color-accent: var(--oscuro-accent);
+  --color-accent-hover: var(--oscuro-accent-hover);
+  --color-rose: var(--oscuro-rose);
+  --color-lavender: var(--oscuro-lavender);
+  --color-coral: var(--oscuro-coral);
+  --color-rose-soft: var(--oscuro-rose-soft);
+  --color-lavender-soft: var(--oscuro-lavender-soft);
+  --color-accent-soft: var(--oscuro-accent-soft);
+  --edge: var(--oscuro-edge);
+  --dot: var(--color-sand-700);
+  --rule: #1b2030;
+  --focus: var(--color-accent);
+  /* Texto claro sobre amarillo pleno no se lee: la franja baja al 34 %. */
+  --marker-band: color-mix(in srgb, var(--color-marker) 34%, transparent);
+  --shadow-pop: 0 12px 32px -16px rgba(5, 7, 12, 0.6);
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+/* Para filas y summaries dentro de un contenedor con overflow oculto. */
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+}
+
+/* Solo oscuro: línea de luz de 1 px bajo el borde superior de las tarjetas (no es una sombra). */
+@utility edge-light {
+  &:where(.dark *) {
+    --tw-inset-shadow: inset 0 1px 0 0 var(--edge, transparent);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
+  }
+}
+
+/* Fondos de cuaderno: patrones de corte duro (no degradados), decorativos y tenues. */
+@utility dot-grid {
+  background-image: radial-gradient(circle, var(--dot) 1px, transparent 1.5px);
+  background-size: 24px 24px;
+  background-position: center;
+}
+
+@utility ruled-lines {
+  background-image: repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule) 27px 28px);
+}
+
+@utility grid-lines {
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Subrayador: franja amarilla plana detrás de 1 palabra clave por vista. */
+@utility marker {
+  background-image: linear-gradient(
+    transparent 55%,
+    var(--marker-band) 55%,
+    var(--marker-band) 92%,
+    transparent 92%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding-inline: 0.06em;
+  box-decoration-break: clone;
 }
 
 @layer base {
   :root {
+    color-scheme: light;
     font-family: var(--font-sans);
     line-height: 1.5;
-    color: var(--color-text);
-    background: var(--color-bg);
-    color-scheme: dark;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .dark body {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
   }
 
   #root {

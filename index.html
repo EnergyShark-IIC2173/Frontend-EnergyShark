@@ -5,6 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EnergyShark</title>
+    <!-- Tema antes del primer paint (DF-030). Misma regla y clave que src/lib/theme.js. -->
+    <script>
+      try {
+        var t = localStorage.getItem('energyshark-theme')
+        var dark = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (dark) document.documentElement.classList.add('dark')
+      } catch (e) {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark')
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

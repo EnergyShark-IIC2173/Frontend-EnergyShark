@@ -59,7 +59,7 @@ export function RejectedMessages() {
                   </td>
                   <td className={`${td} font-mono text-xs whitespace-nowrap text-ink dark:text-paper`}>{orDash(msg.type)}</td>
                   <td className={`${td} font-mono text-xs text-ink dark:text-paper`}>{orDash(msg.reason)}</td>
-                  <td className={`${td} tabular-nums`}>{orDash(msg.code)}</td>
+                  <td className={`${td} whitespace-nowrap tabular-nums`}>{orDash(msg.code)}</td>
                   <td className={`${td} font-mono text-xs whitespace-nowrap`} title={msg.msgId ?? undefined}>{truncId(msg.msgId)}</td>
                   <td className={`${td} font-mono text-xs whitespace-nowrap`} title={msg.idpk ?? undefined}>{truncId(msg.idpk)}</td>
                   <td className={`${td} min-w-56`}>{orDash(msg.detail)}</td>

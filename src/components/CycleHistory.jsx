@@ -135,7 +135,7 @@ function CycleCard({ cycle, defaultOpen, live }) {
       </div>
 
       <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)} className="group mt-4">
-        <summary className={`flex w-fit cursor-pointer list-none items-center gap-2 rounded-lg text-sm font-semibold text-ink dark:text-paper [&::-webkit-details-marker]:hidden focus-ring`}>
+        <summary className={`flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-lg text-sm font-semibold text-ink dark:text-paper [&::-webkit-details-marker]:hidden focus-ring`}>
           <Icon name="chevron" className="size-4 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none" />
           <span className="group-open:hidden">Ver detalle del ciclo</span>
           <span className="hidden group-open:inline">Ocultar detalle</span>

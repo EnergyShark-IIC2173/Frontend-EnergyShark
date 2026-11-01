@@ -16,7 +16,7 @@ const icons = { error: 'alert', warning: 'warning', settled: 'check' }
 export function Badge({ tone = 'neutral', className = '', children }) {
   const icon = icons[tone]
   return (
-    <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-semibold whitespace-nowrap tabular-nums ${tones[tone] ?? tones.neutral} ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 font-sans text-xs font-semibold whitespace-nowrap tabular-nums ${tones[tone] ?? tones.neutral} ${className}`}>
       {icon ? <Icon name={icon} className="size-3.5" /> : null}
       {children}
     </span>

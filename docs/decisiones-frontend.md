@@ -609,3 +609,57 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - `src/components/ui/UserMenu.jsx` (nuevo), `src/components/ui/Avatar.jsx` (nuevo), `src/components/ui/ThemeSwitch.jsx`
   - `src/components/CycleHistory.jsx`, `src/index.css`
   - se elimina `src/components/LogoutButton.jsx`
+
+## DF-033 — Intro del tiburón, grilla de tarjetas con diálogo, navegación entre ciclos y detalle por pestañas (reemplaza partes de DF-020, DF-024 y DF-032)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: los cuatro pedidos) + agente (diseño de cada sistema)
+
+- **Contexto:** Esteban pidió:
+  - una entrada divertida después de iniciar sesión;
+  - una navegación más fácil (72 ciclos al día y, hasta ahora, el paginador estaba al fondo y no volvía arriba);
+  - una grilla que distinga el ciclo actual de los demás, con tarjetas que se abran con animación;
+  - una lectura del detalle del ciclo más fácil.
+- **1. Intro del tiburón** (reemplaza "Cargando Auth0..."):
+  - **Secuencia completa:** la aleta del isotipo entra nadando sobre una ola que corre, con un vaivén leve, y aparece el wordmark. Cuando Auth0 termina, la aleta sale nadando hacia la derecha y la pantalla se funde hacia la vista.
+  - **Cuándo se ve:** completa una vez por pestaña (`sessionStorage`) o al volver del login de Auth0 (`code` en la URL). En las recargas siguientes, versión corta: solo un fundido mientras carga.
+  - **Movimiento:** solo `transform`, `opacity` y `clip-path`. Con "Reducir movimiento" no nada: solo aparece y se funde.
+  - **Lectores de pantalla:** `role="status"` con "Cargando EnergyShark".
+- **2. Navegación entre ciclos:**
+  - **Paginador arriba de la grilla:** primera, anterior, números con elipsis, siguiente y última; en el celular, anterior, "X de Y" y siguiente. Al cambiar de página la vista sube al título y el foco pasa al título (tabindex -1). Abajo queda un paginador compacto.
+  - **Buscar ciclo por ID** (`GET /api/cycles/{cycleId}`, que ya existe): abre el diálogo de ese ciclo aunque no esté en la página. Si no existe, el aviso aparece junto al campo.
+  - **"Volver al ciclo actual"** cuando no estás en la página 1.
+  - **Dentro del diálogo:** ciclo anterior y siguiente con botones y con ← y →. En el borde de la página carga la página vecina y sigue.
+- **3. Grilla de tarjetas:**
+  - **Página 1:** el ciclo más reciente es una tarjeta grande a la mitad del ancho (2 columnas × 2 filas desde `xl`), con:
+    - fase y una barra del avance mercado/cierre (con `scaleX`);
+    - una cuenta regresiva al próximo instante de la central;
+    - los contadores en grande y la última operación.
+    - Se llama "Ciclo actual" mientras no está cerrado y "Último ciclo" si ya cerró.
+  - **Los demás ciclos** son tarjetas chicas: cada tarjeta entera es un `<button>` con `aria-haspopup="dialog"`.
+  - **Páginas de 9 ciclos:** en la página 1 caben exactos (grande = 4 celdas + 8 chicas = 3 filas de 4); en las demás, 3 filas de 3.
+  - **Diálogo:** al abrir una tarjeta, el detalle se abre en un `<dialog>` modal que crece desde la tarjeta: transform y escala desde su rectángulo, con WAAPI. Al cerrar vuelve a la tarjeta. Se cierra con Escape, con el botón o apretando el velo.
+    - Mientras está abierto, la página no hace scroll.
+    - En el celular ocupa la pantalla.
+    - Con "Reducir movimiento" solo hay un fundido.
+  - **Reemplazos:** el diálogo reemplaza el detalle en línea de DF-032 (un solo ciclo abierto, apretar afuera para cerrar, botón que baja al final). El modal resuelve lo mismo por diseño. El detalle se sigue pidiendo solo al abrir (DF-024).
+  - **Mocks (DF-025):** generan 40 ciclos históricos más, para ver la grilla y la paginación.
+- **4. Detalle del ciclo por pestañas:**
+  - **Cabecera fija del diálogo:** id, fase, reporte, ventana, anterior/siguiente y cerrar.
+  - **Cifras clave siempre a la vista:** generación, consumo, vendible, costo, créditos y energía al cierre.
+  - **Última operación aplicada** con un botón "Ver" que abre su pestaña y marca la fila (DF-027).
+  - **Pestañas** (`role="tablist"`, flechas, Home y End), cada una con su contador:
+    - **Resumen:** línea de tiempo del mercado (abre, última oferta, último bid, cierre y válido hasta, con pasado o futuro), precios de recompra y desbalance, y financiamiento.
+    - **Mercado:** oferta, con una barra de lo que queda y la tabla de actualizaciones, y tablas de bids recibidos y enviados.
+    - **Swaps:** tabla con transporte y total de compras.
+    - **Cierre:** liquidación de desbalance (en cuenta frente a déficit), reporte y saldos.
+    - **E1:** solo si el ciclo trae datos de la E1 (DF-026).
+  - **Tablas legibles:** unidades en el encabezado, números alineados a la derecha con `tabular-nums`, `th scope`, caption para lectores de pantalla y scroll horizontal dentro de la tabla.
+- **Alternativas descartadas:**
+  - Llevar el detalle a una página aparte con su ruta: obliga a introducir el router en las vistas y se pierde la grilla de fondo.
+  - Hacer scroll infinito: dificulta llegar a un ciclo concreto, que es lo que pide la demo.
+- **Dónde vive:**
+  - `src/App.jsx`, `src/components/ui/SharkIntro.jsx`
+  - `src/components/CycleHistory.jsx` y `src/components/cycles/` (tarjetas, diálogo, paginador, búsqueda, detalle)
+  - `src/components/ui/Tabs.jsx`, `src/hooks/useNow.js`
+  - `src/lib/pagination.js` y `src/lib/cycles.js` (con tests)
+  - `src/mocks/cycles.js`, `src/index.css`

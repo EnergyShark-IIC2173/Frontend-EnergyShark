@@ -148,22 +148,50 @@
     }
   }
 
-  /* Tiburón ocasional del login (DF-036): cruza de derecha a izquierda en ~15 s y desaparece el resto del ciclo. */
-  --animate-shark-cruise: shark-cruise 48s linear 3s infinite backwards;
+  /* Easter egg del login (DF-037): la aleta del logo se sumerge, el tiburón cruza una vez de derecha a izquierda y
+     la aleta vuelve a asomar. Con "Reducir movimiento", el tiburón solo aparece y se va con un fundido. */
+  --animate-shark-swim: shark-swim 9s linear forwards;
+  --animate-shark-peek: shark-peek 3s ease-in-out forwards;
+  --animate-fin-dive: fin-dive 0.35s cubic-bezier(0.55, 0, 0.75, 0.2) forwards;
+  --animate-fin-rise: fin-rise 0.5s cubic-bezier(0.34, 1.3, 0.64, 1) backwards;
 
-  @keyframes shark-cruise {
+  @keyframes shark-swim {
     0% {
       opacity: 0;
       transform: translateX(100vw);
     }
-    3%,
-    28% {
-      opacity: 0.5;
+    6%,
+    90% {
+      opacity: 1;
     }
-    31%,
     100% {
       opacity: 0;
-      transform: translateX(-6rem);
+      transform: translateX(-8rem);
+    }
+  }
+
+  @keyframes shark-peek {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    30%,
+    70% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fin-dive {
+    to {
+      opacity: 0;
+      transform: translateY(70%);
+    }
+  }
+
+  @keyframes fin-rise {
+    from {
+      opacity: 0;
+      transform: translateY(70%);
     }
   }
 

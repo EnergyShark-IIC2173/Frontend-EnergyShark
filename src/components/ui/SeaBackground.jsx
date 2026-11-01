@@ -1,10 +1,12 @@
+import { useEffect } from 'react'
+import { useSharkSwim } from '../../hooks/sharkSwim'
 import { wavePath } from '../../lib/waves'
 import { FIN_PATH } from './Logo'
 
 // Fondo del login, "Mar de olas" (DF-035, DF-036). Cada capa tiene su propio patrón de crestas irregulares, corre
 // hacia la derecha (translateX sobre un trazo del doble del ancho) y se mece en vertical a su propio ritmo. Una
 // segunda línea más tenue acompaña a cada ola como textura. Las de abajo son más altas, rápidas y marcadas; las de
-// arriba, más lentas y tenues. A veces cruza un tiburón. Solo transform y opacity; decorativo y quieto con
+// arriba, más lentas y tenues. El tiburón solo cruza con el easter egg (DF-037). Solo transform y opacity; decorativo y quieto con
 // "Reducir movimiento".
 const LAYERS = [
   { top: '8%', repeats: 8, h: 'h-8', o: 'opacity-25', run: '52s', bob: '11s', delay: '-14s', crests: [[30, 2], [44, 3], [26, 1.5], [40, 2.5]] },
@@ -43,21 +45,33 @@ export function SeaBackground() {
   )
 }
 
-// La aleta del isotipo cruza muy sutilmente, de derecha a izquierda (hacia donde apunta, DF-034), sobre una ola y
-// meciéndose con ella (mismo vaivén y desfase). Está ~15 s de cada 48 s; con "Reducir movimiento" no aparece.
-// La quinta ola (71 %) pasa bajo la tarjeta del login: el tiburón no queda tapado a mitad de camino.
+// Easter egg (DF-037): al apretar la aleta del logo, el tiburón cruza una vez de derecha a izquierda (hacia donde
+// apunta, DF-034) sobre la quinta ola, que va bajo la tarjeta, meciéndose con ella. Va en un tono parecido al fondo
+// para no destacar. Al terminar avisa con finish(); un respaldo con timeout evita que quede a medias.
 const SHARK_LAYER = 4
 
 function Shark({ layer }) {
+  const { swimming, finish } = useSharkSwim()
+
+  useEffect(() => {
+    if (!swimming) return undefined
+    const timer = setTimeout(finish, 11_000)
+    return () => clearTimeout(timer)
+  }, [swimming, finish])
+
+  if (!swimming) return null
   return (
     <div
-      className={`absolute inset-x-0 hidden motion-safe:block motion-safe:animate-sea-bob ${layer.h}`}
+      className={`absolute inset-x-0 motion-safe:animate-sea-bob ${layer.h}`}
       style={{ top: layer.top, animationDuration: layer.bob, animationDelay: layer.delay }}
     >
-      <span className="absolute bottom-[calc(50%-0.45rem)] left-0 block opacity-0 motion-safe:animate-shark-cruise">
+      <span
+        onAnimationEnd={(e) => e.target === e.currentTarget && finish()}
+        className="absolute bottom-[calc(50%-0.5rem)] left-0 block text-sand-300 motion-safe:animate-shark-swim motion-reduce:left-[70%] motion-reduce:animate-shark-peek dark:text-sand-700"
+      >
         <span className="block motion-safe:animate-bob" style={{ animationDuration: '2.6s' }}>
-          <svg viewBox="0 0 28 22" className="h-8 w-10">
-            <path d={FIN_PATH} className="fill-accent stroke-ink dark:stroke-paper" strokeWidth={1.2} strokeLinejoin="round" />
+          <svg viewBox="0 0 28 22" className="h-10 w-12">
+            <path d={FIN_PATH} className="fill-current stroke-current" strokeWidth={1.2} strokeLinejoin="round" />
           </svg>
         </span>
       </span>

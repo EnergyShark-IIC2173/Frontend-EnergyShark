@@ -1,7 +1,5 @@
 import { useCallback, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { useApiClient } from './api/client'
-import { getHealth } from './api/endpoints'
 import { LoginButton } from './components/LoginButton'
 import { CycleHistory } from './components/CycleHistory'
 import { DistanceTable } from './components/DistanceTable'
@@ -17,9 +15,6 @@ const INTRO_KEY = 'energyshark-intro'
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
-  const { apiFetch } = useApiClient()
-  const [healthStatus, setHealthStatus] = useState(null)
-  const [error, setError] = useState(null)
   const [activeView, setActiveView] = useState('history')
   // Sidebar plegada desde md (se recuerda) y cajón abierto bajo md (DF-032).
   const [collapsed, setCollapsed] = useState(() => {
@@ -70,17 +65,6 @@ function App() {
     setMobileOpen(false)
   }
 
-  async function checkHealth() {
-    setError(null)
-    setHealthStatus(null)
-    try {
-      const data = await getHealth(apiFetch)
-      // master responde texto plano "ok"; el contrato promete JSON (DF-018): se muestran ambos.
-      setHealthStatus(typeof data === 'string' ? data : JSON.stringify(data))
-    } catch (err) {
-      setError(err.message)
-    }
-  }
 
   let content = null
   if (!isLoading && !isAuthenticated) content = (
@@ -101,7 +85,6 @@ function App() {
       <Sidebar
         activeView={activeView}
         onSelect={selectView}
-        health={{ onCheck: checkHealth, status: healthStatus, error }}
         collapsed={collapsed}
         onToggle={toggleSidebar}
         mobileOpen={mobileOpen}

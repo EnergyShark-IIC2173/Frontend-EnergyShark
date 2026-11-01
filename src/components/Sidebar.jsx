@@ -4,9 +4,7 @@ import { Icon } from './ui/Icon'
 import { Logo, LogoMark } from './ui/Logo'
 import { ThemeSwitch } from './ui/ThemeSwitch'
 import { UserMenu } from './ui/UserMenu'
-import {
-  btnSecondary, divider, labelBase, navItemActive, navItemInactive, surface, textAccent, textError, textPrimary, textSecondary,
-} from './ui/classes'
+import { divider, labelBase, navItemActive, navItemInactive, textSecondary } from './ui/classes'
 
 const NAV_ITEMS = [
   { id: 'history', icon: 'history', label: 'Historial de Ciclos' },
@@ -20,8 +18,8 @@ const iconButton = `grid size-11 shrink-0 cursor-pointer place-items-center roun
 // - desde md es fija (sticky a la altura de la pantalla): solo hace scroll el contenido;
 // - se pliega a un riel de íconos animando el ancho (excepción documentada en DF-032) y recuerda el estado;
 // - bajo md es un cajón que entra con translate-x desde la barra superior.
-// Al pie van el tema y la cuenta.
-export function Sidebar({ activeView, onSelect, health, collapsed, onToggle, mobileOpen, onMobileOpen, onMobileClose }) {
+// Al pie van el tema y la cuenta. Sin tarjeta de estado de la API (DF-034).
+export function Sidebar({ activeView, onSelect, collapsed, onToggle, mobileOpen, onMobileOpen, onMobileClose }) {
   const desktop = useMediaQuery('(min-width: 48rem)')
   const rail = desktop && collapsed
   const hidden = !desktop && !mobileOpen
@@ -94,46 +92,11 @@ export function Sidebar({ activeView, onSelect, health, collapsed, onToggle, mob
           ))}
         </nav>
 
-        <HealthCard {...health} rail={rail} />
-
         <div className={`flex flex-col gap-1 border-t pt-3 ${divider}`}>
           <ThemeSwitch compact={rail} />
           <UserMenu collapsed={rail} />
         </div>
       </aside>
     </>
-  )
-}
-
-// Estado de la API (DF-011): el resultado de /health se muestra en la misma tarjeta. En el riel queda un ícono con
-// un punto de color y el resultado como texto para lectores de pantalla y en el tooltip.
-function HealthCard({ onCheck, status, error, rail }) {
-  if (rail) {
-    const result = status ? `OK: ${status}` : error ? `Error: ${error}` : null
-    return (
-      <button type="button" onClick={onCheck} title={result ?? 'Probar /health con token'} className={`relative ${iconButton} w-full`}>
-        <Icon name="pulse" className={`size-5 ${textAccent}`} />
-        <span className="sr-only">Probar /health con token</span>
-        {result ? (
-          <>
-            <span aria-hidden="true" className={`absolute top-2 right-4 size-2 rounded-full ${status ? 'bg-accent' : 'bg-coral'}`} />
-            <span role="status" className="sr-only">{result}</span>
-          </>
-        ) : null}
-      </button>
-    )
-  }
-  return (
-    <section aria-label="Estado de la API" className={`rounded-2xl p-4 ${surface}`}>
-      <p className={`flex items-center gap-2 ${labelBase}`}>
-        <Icon name="pulse" className={`size-4 ${textAccent}`} />
-        Estado de la API
-      </p>
-      <button type="button" onClick={onCheck} className={`${btnSecondary} mt-3 w-full ${textPrimary}`}>
-        Probar /health con token
-      </button>
-      {status ? <p className={`mt-3 font-mono text-xs break-all ${textAccent}`}>OK: {status}</p> : null}
-      {error ? <p className={`mt-3 font-mono text-xs break-all ${textError}`}>Error: {error}</p> : null}
-    </section>
   )
 }

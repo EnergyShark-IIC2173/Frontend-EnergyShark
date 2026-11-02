@@ -7,18 +7,22 @@ export async function mockGetBalance() {
   await delay(200)
   const now = Date.now()
   const pending = Math.floor(now / 30_000) % 2 === 0
+  // Con la operación abierta, la wallet ya liquidó swp-81 y el evento swap-settled aún no se aplica al ledger:
+  // el ledger va atrasado (ADR-005), no adelantado.
+  const ledgerCr = 394450.25
+  const ledgerKwh = 6000
   return {
-    ledger: { cr: pending ? 2374450.25 : 394450.25, kwh: pending ? 6000 : 0, cycleId: 'cycle-9432' },
+    ledger: { cr: pending ? ledgerCr : ledgerCr + 1980000, kwh: pending ? ledgerKwh : 0, cycleId: 'cycle-9432' },
     lastReconciliation: {
       cycleId: 'cycle-9432',
-      ledgerCr: pending ? 2374450.25 : 394450.25,
-      walletCr: 394450.25,
-      deltaCr: pending ? 1980000 : 0,
-      ledgerKwh: pending ? 0 : 0,
-      walletKwh: pending ? 6000 : 0,
-      deltaKwh: pending ? -6000 : 0,
+      ledgerCr: pending ? ledgerCr : ledgerCr + 1980000,
+      walletCr: ledgerCr + 1980000,
+      deltaCr: pending ? -1980000 : 0,
+      ledgerKwh: pending ? ledgerKwh : 0,
+      walletKwh: 0,
+      deltaKwh: pending ? ledgerKwh : 0,
       openOps: pending ? 1 : 0,
-      note: pending ? 'swap swp-81 propuesto: la wallet retiene 6 000 kWh hasta que se liquide o expire' : null,
+      note: pending ? 'swp-81 ya liquidado en la wallet; el swap-settled todavía no se aplica al ledger local' : null,
       takenAt: new Date(now - (now % 30_000)).toISOString(),
     },
   }

@@ -745,3 +745,42 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - Con "Reducir movimiento" no hay nado: el tiburón aparece y se va con un fundido, quieto.
   - La olas de DF-036 no cambian.
 - **Dónde vive:** `src/hooks/sharkSwim.js` (nuevo), `src/components/ui/Logo.jsx` (`WaterMark`), `src/components/ui/SeaBackground.jsx`, `src/components/ui/AuthScreen.jsx`, `src/components/LoginButton.jsx`, `src/index.css`.
+
+## DF-038 — RF02: vista "Mercado" con el libro de ofertas y precio efectivo calculado en el front
+
+**Fecha:** 2026-11-01 · **Unidad:** S12 (RF02) · **Decidió:** Esteban (humana: ubicación) + agente (forma de los datos y cálculo)
+
+- **Contexto:**
+  - RF02 pide el libro de ofertas vigente según `market.{CODE}`, con precio, `remaining`, transporte hasta cada vendedor según la `distance-table` y precio efectivo, y las rutas deshabilitadas marcadas. Es la vista de la anomalía 6 (ruta deshabilitada a mitad de mercado).
+  - El endpoint del libro es de Francisca (S6) y todavía no existe. La `distance-table` ya tiene endpoint, pero sin `disabledRouteTransportCost`.
+  - Referencia API v3: `offer` trae `offerId`, `quantity` y `pricePerEnergy`; `offer-updated` trae `remaining` y puede cambiar `pricePerEnergy`; `offer-withdrawn` la saca; `market-closed` cierra el libro. La tarifa de una ruta deshabilitada es `disabledRouteTransportCost`, por kWh y km. Rige la última `distance-table` recibida.
+- **Decisión humana:** "Vista nueva Mercado (Recommended)". Ítem propio en la sidebar, entre el historial y Conectividad. Conectividad se queda como tabla de rutas.
+- **Forma propuesta para S6** (`GET /api/market/offers`, la fija el front como en DF-024):
+  - `{ cycleId, closesAt, marketClosed, updatedAt, offers: [{ offerId, cityId, pricePerEnergy, quantity, remaining, publishedAt, updatedAt }] }`.
+  - Solo ofertas vigentes: las retiradas no vienen. Con `market-closed` llega `marketClosed: true` y `offers` vacío.
+  - `remaining` es el último `offer-updated` (o `quantity` si no hubo).
+  - `GET /api/distance-table` suma `disabledRouteTransportCost` al nivel de `distances`.
+- **Decisiones del agente:**
+  - **El precio efectivo se calcula en el front** (`src/lib/market.js`, puro y con tests) cruzando el libro con la `distance-table` que ya expone master. Así hay una sola fuente de la tabla vigente (la que elige el backend, ADR-002 addendum 3) y S6 no tiene que repetir el cálculo.
+    - Ruta habilitada: transporte por kWh = `round2(distance_km × transportCost)` (DF-029).
+    - Ruta deshabilitada: `round2(distance_km × disabledRouteTransportCost)`. Si el campo todavía no viene, la celda dice "Tarifa punitiva" sin cifra y el precio efectivo queda vacío.
+    - Precio efectivo = `round2(pricePerEnergy + transporte por kWh)`.
+  - **Filas especiales:** la oferta propia (mismo `cityId` que la tabla) se marca "Propia" y no tiene precio efectivo, porque comprarse a sí mismo es `SELF_TRADE`. Un vendedor sin ruta en la tabla se marca "Sin ruta".
+  - **Orden:** por precio efectivo ascendente por defecto, con las filas sin precio efectivo al final. Se puede ordenar por precio, `remaining` y precio efectivo con los encabezados (`aria-sort`).
+  - **Polling:** libro cada 5 s y tabla cada 10 s mientras la vista está abierta. Un `offer-updated` o una `distance-table` nueva se ven en segundos (anomalía 6), sin pegarle a master más que eso.
+  - **Mocks:** `VITE_USE_MOCKS` (DF-025) también responde el libro y la `distance-table`, con una ruta deshabilitada y la oferta propia, para ver la vista antes de S6. Se borran en S23 junto con los de RF01.
+  - Aviso fijo bajo la tabla: el `remaining` que se ve puede estar viejo; la respuesta real la da el vendedor (`QUANTITY_UNAVAILABLE` con `available`).
+- **Alternativa descartada:** que S6 devuelva el precio efectivo ya calculado. Repite la lógica de la tabla vigente en dos lugares.
+- **Dónde vive:** `src/components/MarketBook.jsx` (nuevo), `src/lib/market.js` (nuevo), `src/mocks/market.js` (nuevo), `src/api/endpoints.js`, `src/components/Sidebar.jsx`, `src/App.jsx`.
+
+## DF-039 — Conectividad muestra la tarifa punitiva y que rige la última tabla (amplía DF-029)
+
+**Fecha:** 2026-11-01 · **Unidad:** S12 · **Decidió:** agente, dentro del alcance de S12 en el roadmap
+
+- **Contexto:** DF-029 dejó "Tarifa punitiva" sin cifra porque `disabledRouteTransportCost` no venía. S6 lo agrega a `GET /api/distance-table` (DF-038).
+- **Decisión:**
+  - Con el campo presente, una ruta deshabilitada muestra su transporte por kWh calculado con esa tarifa, rotulado "punitiva". Sin el campo, sigue el texto de DF-029.
+  - El aviso de rutas deshabilitadas muestra la tarifa (CR/kWh·km) cuando viene.
+  - El subtítulo dice que rige la última tabla publicada por la central, con su hora.
+  - El cálculo por fila se comparte con el libro de ofertas (`routeTransport` en `src/lib/market.js`).
+- **Dónde vive:** `src/components/DistanceTable.jsx`, `src/lib/market.js`.

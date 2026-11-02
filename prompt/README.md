@@ -67,3 +67,4 @@ agente no escribió credenciales.
 | `tarea-contratos-org/` | RDOC04.fix — referencias al repo de contratos y al `AGENTS.md` org-level | `docs/contratos-org`, apilada sobre `fix/auth0-sesion` |
 | `tarea-readme-front/` | Docs — README del frontend y guía de deploy S3 + CloudFront | `docs/readme-front` (fork `Pedr0sit0s`), desde `main` |
 | `tarea-s12-mercado/` | S12 — mercado en vivo (RF02): libro de ofertas, precio efectivo y tarifa punitiva | `feat/e2-s12-mercado`, apilada sobre `feat/rediseno-studylicc` |
+| `tarea-s13-estrategia/` | S13 — estrategia versionada y swaps en curso (RF04) y experimento de span (RF06) | `feat/e2-s13-estrategia`, apilada sobre `feat/e2-s12-mercado` |

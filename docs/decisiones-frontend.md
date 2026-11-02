@@ -785,3 +785,44 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - El subtítulo dice que rige la última tabla publicada por la central, con su hora.
   - El cálculo por fila se comparte con el libro de ofertas (`routeTransport` en `src/lib/market.js`).
 - **Dónde vive:** `src/components/DistanceTable.jsx`, `src/lib/market.js`.
+
+## DF-040 — RF04 de la E2: vista "Estrategia" con formulario versionado, historial y swaps en curso (reemplaza a DF-017, ya retirado en DF-028)
+
+**Fecha:** 2026-11-01 · **Unidad:** S13 (RF04) · **Decidió:** Esteban (humana: alcance y navegación) + agente (formulario, validación y forma de los datos)
+
+- **Contexto:**
+  - RF04 pide fijar precio y cantidad de la oferta, la política de aceptación de bids, el span y la política de selección, y ver los swaps en curso con su estado, con cambios sin redeploy.
+  - ADR-006: la estrategia es configuración versionada en `strategy_configs` (append-only). Cada ciclo congela un snapshot al llegar su `status-statement`, así que un cambio aplica desde el ciclo siguiente. Las políticas son código registrado por nombre (`fifo`, `highest_quantity_first`; `lowest_effective_price`); la config solo elige nombre y parámetros.
+  - El contrato ya está en `openapi.yaml` (S0): `GET/POST /api/strategy`, `GET /api/strategy/versions`, `StrategyParams` y `strategy-config.schema.json`. Lo implementa David en S9, que aún no existe.
+  - `GET /api/swaps?status=open` existe en la rama de S5 (Pedro, #43): `{ data: [{ idpk, kind, cycleId, swapId, state, request, createdAt }] }`, con `kind` `propose-swap` | `accept-swap` | `cancel-swap`, `state` `pending` | `sent` y `request` igual al body enviado a la wallet (`give`, `take`, `expiresAt`, `memo` al proponer; `swapId` al aceptar o cancelar).
+- **Decisiones humanas:** "Sí, RF04 + RF06 (Recommended)" y "Dos ítems (Recommended)": "Estrategia" (RF04) y "Experimento span" (RF06) son vistas separadas en la sidebar.
+- **Vista "Estrategia":**
+  - **Versión vigente** arriba: número, autor, fecha, nota y un aviso fijo: "Un cambio aplica desde el siguiente ciclo; el ciclo en curso termina con su snapshot".
+  - **Formulario** precargado con la versión vigente: `span_seconds` (5–60), `offer.price_mode` (`fixed` | `pct_of_imbalance`) y `price`, `offer.quantity_mode` (`all_sellable` | `fixed`) y `quantity`, `acceptance_policy` y `selection_policy` (lista con los nombres de ADR-006, más "Otra…" para escribir un nombre nuevo), sus `params` como JSON opcional, `span_plan` opcional (lista separada por comas) y `note`. Guardar crea una versión nueva con `POST /api/strategy`; nunca se edita una existente.
+  - **Validación en el front** (`src/lib/strategy.js`, pura y con tests) con las mismas reglas que `strategy-config.schema.json`, para no esperar al 400. El 400 del backend igual se muestra: `error` y, si viene, la lista `details` (`[{ path, message }]`, forma propuesta para S9).
+  - **Sin versión** (`404` en `GET /api/strategy`): el formulario se precarga con valores sugeridos (span 20, 80 % de `imbalancePrice`, todo lo vendible, `fifo`, `lowest_effective_price`) y lo dice. La config por defecto del backend la define el addendum de ADR-006 (brecha #5).
+  - **Historial** (`GET /api/strategy/versions`, paginado): versión, fecha, autor, span, precio, cantidad, políticas y nota. "Usar como base" carga una versión vieja en el formulario; guardar crea una versión nueva.
+  - **Swaps en curso** (`GET /api/swaps?status=open`, polling 3 s): operación ("Proponemos", "Aceptamos", "Cancelamos"), `swapId`, ciclo, qué entregamos y qué recibimos (de `request.give`/`take` al proponer), estado ("En cola" para `pending`, "Enviado a la wallet" para `sent`) y antigüedad; al proponer, cuenta regresiva hasta `expiresAt`. Es la evidencia de la anomalía 3 (contraparte que no cumple: el swap expira y desaparece de la lista).
+- **Mocks** (`VITE_USE_MOCKS`, `npm run dev:mocks`): estrategia en memoria (el POST valida y agrega una versión), historial y swaps en curso que rotan con el reloj. Se borran en S23.
+- **Alternativa descartada:** editar la versión vigente en el lugar. Rompe el append-only de ADR-006 y la atribución de RF06.
+- **Dónde vive:** `src/components/StrategyAdmin.jsx` y `src/components/strategy/` (nuevos), `src/lib/strategy.js`, `src/lib/swaps.js`, `src/mocks/strategy.js`, `src/api/endpoints.js`, `src/components/Sidebar.jsx`, `src/App.jsx`.
+
+## DF-041 — RF06: vista "Experimento span", agregado por span y detalle por ciclo
+
+**Fecha:** 2026-11-01 · **Unidad:** S13 (RF06, AD6) · **Decidió:** Esteban (humana: alcance y navegación) + agente (forma de los datos y cálculo)
+
+- **Contexto:**
+  - RF06: por ciclo, el span usado, el déficit cubierto vía mercado, el costo efectivo frente al baseline y los bids rechazados, y una vista agregada por valor de span. AD6: cada ciclo se atribuye al span que realmente usó (`cycle_strategy.snapshot`), no a la config viva.
+  - ADR-006 define `cycle_metrics` (`span_seconds`, `deficit_kwh`, `covered_kwh`, `effective_cost`, `baseline_cost`, `bids_rejected`). La tabla y `GET /api/metrics/cycles` y `GET /api/metrics/spans` son de David (S9); el cálculo al cierre, de Pedro (S8). No existen todavía.
+  - Leaderboard: `score = Σ ahorro / Σ |baseline|`, con ahorro = baseline − costo efectivo.
+- **Forma propuesta para S9:**
+  - `GET /api/metrics/cycles?page&limit` (paginado, más reciente primero): `{ cycleId, spanSeconds, configVersion, deficitKwh, coveredKwh, effectiveCost, baselineCost, bidsRejected, computedAt }`.
+  - `GET /api/metrics/spans`: `{ data: [{ spanSeconds, cycles, deficitKwh, coveredKwh, effectiveCost, baselineCost, bidsRejected }] }`, con **sumas** por span. Los cocientes los calcula el front, para no promediar promedios.
+- **Decisiones del agente** (`src/lib/experiment.js`, puro y con tests):
+  - Por ciclo y por span: ahorro = baseline − efectivo; cobertura = cubierto / déficit; ahorro relativo = ahorro / |baseline| (la misma razón del leaderboard); bids rechazados por ciclo en el agregado. Si el denominador es 0 o falta, el cociente queda vacío, no 0.
+  - **Agregado primero**, con el span de mejor ahorro relativo destacado ("Mejor span", solo con al menos 3 ciclos para no premiar un ciclo suelto) y una barra horizontal del ahorro relativo por fila. Debajo, la tabla por ciclo paginada, con el span y la versión de config de cada ciclo.
+  - Texto fijo: "Cada ciclo cuenta para el span de su snapshot (cycle_strategy), no para la configuración actual".
+  - Sin polling rápido: las métricas cambian una vez por ciclo. Se recarga cada 60 s.
+- **Mocks:** 36 ciclos que rotan spans 10, 20 y 40 (como un `span_plan`), con cifras que dependen del span.
+- **Alternativa descartada:** agregar en el front desde la lista por ciclo. Con paginación habría que traer todos los ciclos.
+- **Dónde vive:** `src/components/SpanExperiment.jsx` (nuevo), `src/lib/experiment.js`, `src/mocks/metrics.js`, `src/api/endpoints.js`.

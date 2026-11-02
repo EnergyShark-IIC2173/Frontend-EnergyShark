@@ -1,4 +1,5 @@
 // Estrategia de mercado de RF04 (DF-040, ADR-006). Puro, para probarlo con `node --test`.
+import { fmt } from './format.js'
 // El formulario trabaja con strings (lo que hay en los inputs); validateForm arma los `params` de
 // strategy-config.schema.json o devuelve los errores por campo.
 
@@ -131,8 +132,8 @@ export function apiErrorMessages(error) {
 export function describeOffer(params) {
   const offer = params?.offer
   if (!offer) return { price: '—', quantity: '—' }
-  const price = offer.price_mode === 'pct_of_imbalance' ? `${toPercent(offer.price)} % de imbalancePrice` : `${offer.price} CR/kWh`
-  const quantity = offer.quantity_mode === 'fixed' ? `${offer.quantity} kWh` : 'Todo lo vendible'
+  const price = offer.price_mode === 'pct_of_imbalance' ? `${toPercent(offer.price)} % de imbalancePrice` : `${fmt(offer.price)} CR/kWh`
+  const quantity = offer.quantity_mode === 'fixed' ? `${fmt(offer.quantity, 0)} kWh` : 'Todo lo vendible'
   return { price, quantity }
 }
 

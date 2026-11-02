@@ -73,7 +73,7 @@ test('apiErrorMessages junta error y details del 400', () => {
 
 test('describeOffer y policyLabel', () => {
   assert.deepEqual(describeOffer(SUGGESTED_PARAMS), { price: '80 % de imbalancePrice', quantity: 'Todo lo vendible' })
-  assert.deepEqual(describeOffer(params), { price: '330 CR/kWh', quantity: '5000 kWh' })
+  assert.deepEqual(describeOffer(params), { price: '330 CR/kWh', quantity: '5.000 kWh' })
   assert.equal(policyLabel({ name: 'fifo' }, ACCEPTANCE_POLICIES), 'FIFO: en orden de llegada')
   assert.equal(policyLabel({ name: 'x' }, ACCEPTANCE_POLICIES), 'x')
 })

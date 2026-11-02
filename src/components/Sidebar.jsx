@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { id: 'market', icon: 'market', label: 'Mercado' },
   { id: 'strategy', icon: 'strategy', label: 'Estrategia' },
   { id: 'experiment', icon: 'chart', label: 'Experimento span' },
+  { id: 'balance', icon: 'wallet', label: 'Saldo' },
   { id: 'distance', icon: 'network', label: 'Conectividad' },
   { id: 'rejected', icon: 'alert', label: 'Errores/NACKs' },
 ]

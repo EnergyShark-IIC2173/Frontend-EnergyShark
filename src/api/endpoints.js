@@ -1,7 +1,7 @@
 // Una función por endpoint de master (openapi.yaml del repo EnergyShark-IIC2173/contratos). Reciben apiFetch (DF-014).
 import { buildQuery } from './client'
 
-// Mocks de RF01, RF02, RF04 y RF06 solo en `npm run dev` con VITE_USE_MOCKS=true (DF-025, DF-038, DF-040, DF-041). En build, DEV es false y el
+// Mocks de RF01, RF02, RF04, RF05, RF06 y del saldo solo en `npm run dev` con VITE_USE_MOCKS=true (DF-025, DF-038, DF-040..043). En build, DEV es false y el
 // import() dinámico queda fuera del bundle.
 const USE_MOCKS = import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS === 'true'
 
@@ -29,8 +29,17 @@ export async function getMarketOffers(apiFetch) {
   return apiFetch('/api/market/offers')
 }
 
-export const listRejected = (apiFetch, { page = 1, limit = 25, kind } = {}) =>
-  apiFetch(`/api/messages/rejected${buildQuery({ page, limit, kind })}`)
+// RF05 (DF-042): reason y sourceQueue se filtran en master, no en la página cargada.
+export async function listRejected(apiFetch, { page = 1, limit = 25, kind, reason, sourceQueue } = {}) {
+  if (USE_MOCKS) return (await import('../mocks/rejected.js')).mockListRejected({ page, limit, kind, reason, sourceQueue })
+  return apiFetch(`/api/messages/rejected${buildQuery({ page, limit, kind, reason, sourceQueue })}`)
+}
+
+// AD5 (DF-043): ledger local y última reconciliación contra la wallet (S5).
+export async function getBalance(apiFetch) {
+  if (USE_MOCKS) return (await import('../mocks/balance.js')).mockGetBalance()
+  return apiFetch('/api/balance')
+}
 
 // RF04 (DF-040): estrategia versionada (S9) y swaps en curso (S5).
 const strategyMocks = () => import('../mocks/strategy.js')

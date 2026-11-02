@@ -19,6 +19,15 @@ export const REJECTED_KIND = {
   discarded: { label: 'Descartado', tone: 'neutral' },
 }
 
+// Reasons que registra el connector en la v3 (DF-042, de `git grep` sobre connector/src). "Otra…" permite uno exacto.
+export const REJECT_REASONS = ['IDENTITY_MISMATCH', 'MALFORMED_MESSAGE', 'TYPE_RETIRED', 'UNKNOWN_TYPE', 'NOT_A_MARKET_TYPE', 'CYCLE_EXPIRED', 'REPORT_TOO_EARLY']
+
+// Cola de origen de un rechazo (S2): la propia de la ciudad o el feed del mercado.
+export const SOURCE_QUEUE = {
+  city: { label: 'city.{CODE}', tone: 'category' },
+  market: { label: 'market.{CODE}', tone: 'active' },
+}
+
 export const CYCLE_PHASE = {
   negotiating: { label: 'En negociación', tone: 'active' },
   consuming: { label: 'Consumiendo', tone: 'category' },

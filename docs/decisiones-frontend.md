@@ -769,6 +769,7 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - **Orden:** por precio efectivo ascendente por defecto, con las filas sin precio efectivo al final. Se puede ordenar por precio, `remaining` y precio efectivo con los encabezados (`aria-sort`).
   - **Polling:** libro cada 5 s y tabla cada 10 s mientras la vista está abierta. Un `offer-updated` o una `distance-table` nueva se ven en segundos (anomalía 6), sin pegarle a master más que eso.
   - **Mocks:** `VITE_USE_MOCKS` (DF-025) también responde el libro y la `distance-table`, con una ruta deshabilitada y la oferta propia, para ver la vista antes de S6. Se borran en S23 junto con los de RF01.
+  - **`npm run dev:mocks`** (`vite --mode mocks`): carga `.env.mocks`, que solo trae `VITE_USE_MOCKS=true` y se commitea, así los mocks se prenden sin editar el `.env` local (pedido de Esteban). `npm run dev` sigue contra la API. En ese modo `import.meta.env.DEV` sigue en `true` (verificado), y en build no tiene efecto.
   - Aviso fijo bajo la tabla: el `remaining` que se ve puede estar viejo; la respuesta real la da el vendedor (`QUANTITY_UNAVAILABLE` con `available`).
 - **Alternativa descartada:** que S6 devuelva el precio efectivo ya calculado. Repite la lógica de la tabla vigente en dos lugares.
 - **Dónde vive:** `src/components/MarketBook.jsx` (nuevo), `src/lib/market.js` (nuevo), `src/mocks/market.js` (nuevo), `src/api/endpoints.js`, `src/components/Sidebar.jsx`, `src/App.jsx`.

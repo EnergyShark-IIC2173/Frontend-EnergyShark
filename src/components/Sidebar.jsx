@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useCycleClock } from '../hooks/useCycleClock'
+import { CycleClock } from './CycleClock'
 import { Icon } from './ui/Icon'
 import { Logo, LogoMark } from './ui/Logo'
 import { ThemeSwitch } from './ui/ThemeSwitch'
@@ -22,11 +24,13 @@ const iconButton = `grid size-11 shrink-0 cursor-pointer place-items-center roun
 // - desde md es fija (sticky a la altura de la pantalla): solo hace scroll el contenido;
 // - se pliega a un riel de íconos animando el ancho (excepción documentada en DF-032) y recuerda el estado;
 // - bajo md es un cajón que entra con translate-x desde la barra superior.
-// Al pie van el tema y la cuenta. Sin tarjeta de estado de la API (DF-034).
+// Al pie van el tema y la cuenta. Sin tarjeta de estado de la API (DF-034). El reloj del ciclo va sobre la
+// navegación, en el riel y en la barra del celular: siempre visible (DF-044).
 export function Sidebar({ activeView, onSelect, collapsed, onToggle, mobileOpen, onMobileOpen, onMobileClose }) {
   const desktop = useMediaQuery('(min-width: 48rem)')
   const rail = desktop && collapsed
   const hidden = !desktop && !mobileOpen
+  const clock = useCycleClock()
 
   useEffect(() => {
     if (!mobileOpen) return undefined
@@ -44,6 +48,7 @@ export function Sidebar({ activeView, onSelect, collapsed, onToggle, mobileOpen,
           <Icon name="menu" />
         </button>
         <Logo size="sm" />
+        <CycleClock clock={clock} variant="compact" />
       </div>
 
       {mobileOpen ? (
@@ -78,6 +83,8 @@ export function Sidebar({ activeView, onSelect, collapsed, onToggle, mobileOpen,
             </button>
           )}
         </div>
+
+        <CycleClock clock={clock} variant={rail ? 'rail' : 'full'} />
 
         <nav aria-label="Secciones" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
           {rail ? null : <p className={`px-3 pb-1 ${labelBase}`}>Secciones</p>}

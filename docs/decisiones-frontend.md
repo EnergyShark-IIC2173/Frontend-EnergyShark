@@ -863,3 +863,21 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - **Sin tile de leaderboard:** el backend no expone el leaderboard. Queda fuera de S14 (era opcional).
 - **Mocks** (`VITE_USE_MOCKS`): una reconciliación con delta explicado por una operación abierta, que cambia a "Cuadra" cada 30 s.
 - **Dónde vive:** `src/components/BalanceDashboard.jsx` (nuevo), `src/lib/balance.js`, `src/mocks/balance.js`, `src/api/endpoints.js`, `src/components/Sidebar.jsx`, `src/App.jsx`.
+
+## DF-044 — Un solo reloj, el del ciclo, en la sidebar; las vistas quedan con un botón "Actualizar" (reemplaza el reloj de refresco de DF-034)
+
+**Fecha:** 2026-11-01 · **Unidad:** S14 (pedido de diseño de Esteban) · **Decidió:** Esteban (humana: reloj en la sidebar, siempre visible, contando el instante más importante; sacar el de cada vista) + agente (qué instante y cómo se ve)
+
+- **Contexto:** desde DF-034 cada vista tiene un anillo que descuenta hasta su próximo poll. Con siete vistas eso es un reloj distinto por pantalla, y ninguno dice lo que importa en la operación: cuánto falta para el próximo hito del ciclo. Esteban pidió un reloj siempre visible en la sidebar que cuente hasta el siguiente ciclo o el tiempo más importante.
+- **Decisión humana:** "Se va; solo el de la sidebar (Recommended)".
+- **Reloj del ciclo** (`src/components/CycleClock.jsx`):
+  - Lee el ciclo más reciente (`GET /api/cycles?limit=1`, cada 30 s) y cuenta hasta su **próximo instante** con `nextMilestone` (DF-033): el mercado abre, última oferta, último bid, el mercado cierra, el reporte vence. Los instantes son los del `status-statement`; el reloj del navegador solo se compara contra ellos (DF-027).
+  - Pasado `validUntil`, dice "Esperando el próximo ciclo" con el tiempo desde el cierre del reporte. No se inventa la apertura del siguiente: la fija su `status-statement`.
+  - Formato `mm:ss`. Anillo del avance del ciclo entre la apertura del mercado y `validUntil` (`cycleProgress`).
+  - En los últimos 60 s antes de un hito, el número cambia a tono de advertencia, con un ícono además del color.
+  - **Dónde se ve:** sobre la navegación en la sidebar abierta; en el riel, solo el anillo y `mm:ss` (el detalle va en `title`); en el celular, compacto a la derecha de la barra superior. Así está en todas las vistas y tamaños.
+  - Ciclo de la E1 (sin `market`) o sin ciclos: muestra el `cycleId` y "Sin instantes del mercado", sin cuenta.
+  - `aria-live` no: un contador que cambia cada segundo inunda el lector de pantalla. El texto completo va en `aria-label` y se lee al enfocarlo.
+- **Las vistas** conservan su polling en segundo plano. `RefreshTimer` pasa a ser un botón de ícono "Actualizar" (gira mientras carga), con la misma interfaz, así ninguna vista cambia su código.
+- **Alternativa descartada:** mantener ambos relojes. Dos contadores con significados distintos en la misma pantalla.
+- **Dónde vive:** `src/components/CycleClock.jsx` (nuevo), `src/lib/cycles.js` (`cycleClock`, `fmtMmSs`), `src/components/Sidebar.jsx`, `src/components/ui/RefreshTimer.jsx`.

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buyerTotals, hasLegacyData, marketPhase, matchLastOperation, reportPending } from './cycles.js'
+import { buyerTotals, cycleClock, fmtMmSs, hasLegacyData, marketPhase, matchLastOperation, reportPending } from './cycles.js'
 
 const now = Date.parse('2026-10-06T17:50:00Z')
 
@@ -120,4 +120,34 @@ test('cycleProgress va de 0 a 1 entre opensAt y validUntil', async () => {
   assert.equal(cycleProgress(cycle, t + 7.5 * 60_000).value, 0.5)
   assert.equal(cycleProgress(cycle, t + 60 * 60_000).value, 1)
   assert.equal(cycleProgress({}), null)
+})
+
+test('cycleClock: cuenta al próximo hito, espera tras validUntil y casos sin datos', () => {
+  const t0 = Date.parse('2026-10-20T14:05:00Z')
+  const cycle = {
+    cycleId: 'cycle-9431',
+    market: { opensAt: '2026-10-20T14:05:00Z', lastOfferAt: '2026-10-20T14:13:30Z', lastBidAt: '2026-10-20T14:14:00Z', closesAt: '2026-10-20T14:15:00Z' },
+    validUntil: '2026-10-20T14:20:00Z',
+  }
+  const counting = cycleClock(cycle, t0 + 60_000)
+  assert.equal(counting.state, 'counting')
+  assert.equal(counting.label, 'Última oferta')
+  assert.equal(counting.remainingMs, 7.5 * 60_000)
+  assert.equal(counting.progress, 1 / 15)
+
+  assert.equal(cycleClock(cycle, t0 + 12 * 60_000).label, 'El reporte vence')
+  const waiting = cycleClock(cycle, t0 + 16 * 60_000)
+  assert.equal(waiting.state, 'waiting')
+  assert.equal(waiting.sinceMs, 60_000)
+
+  assert.equal(cycleClock({ cycleId: 'cycle-8120', phase: 'closed' }).state, 'no-market')
+  assert.deepEqual(cycleClock(null), { state: 'empty' })
+})
+
+test('fmtMmSs', () => {
+  assert.equal(fmtMmSs(252_000), '04:12')
+  assert.equal(fmtMmSs(999), '00:01')
+  assert.equal(fmtMmSs(3_852_000), '1:04:12')
+  assert.equal(fmtMmSs(-5), '00:00')
+  assert.equal(fmtMmSs(null), null)
 })

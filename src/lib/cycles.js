@@ -119,3 +119,26 @@ export function cycleProgress(cycle, now = Date.now()) {
     marketEnds: Number.isFinite(closes) ? clamp((closes - start) / (end - start)) : null,
   }
 }
+
+// Reloj del ciclo de la sidebar (DF-044): próximo hito del ciclo más reciente, cuánto falta y el avance.
+// state: 'counting' (hay hito), 'waiting' (pasó validUntil: esperando el status-statement del siguiente),
+// 'no-market' (ciclo E1 sin instantes) o 'empty' (sin ciclos).
+export function cycleClock(cycle, now = Date.now()) {
+  if (!cycle) return { state: 'empty' }
+  const base = { cycleId: cycle.cycleId, progress: cycleProgress(cycle, now)?.value ?? null }
+  if (!cycle.market) return { ...base, state: 'no-market' }
+  const next = nextMilestone(cycle, now)
+  if (next) return { ...base, state: 'counting', label: next.label, at: next.at, remainingMs: time(next.at) - now }
+  const end = time(cycle.validUntil)
+  return { ...base, state: 'waiting', label: 'Esperando el próximo ciclo', sinceMs: Number.isFinite(end) ? now - end : null }
+}
+
+// 252 000 ms → "04:12"; más de una hora → "1:04:12". Nunca negativo.
+export function fmtMmSs(ms) {
+  if (ms === null || ms === undefined || !Number.isFinite(ms)) return null
+  const total = Math.max(0, Math.ceil(ms / 1000))
+  const h = Math.floor(total / 3600)
+  const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0')
+  const s = String(total % 60).padStart(2, '0')
+  return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`
+}

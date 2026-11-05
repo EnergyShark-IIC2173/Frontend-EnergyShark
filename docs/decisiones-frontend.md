@@ -826,3 +826,58 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 - **Mocks:** 36 ciclos que rotan spans 10, 20 y 40 (como un `span_plan`), con cifras que dependen del span.
 - **Alternativa descartada:** agregar en el front desde la lista por ciclo. Con paginación habría que traer todos los ciclos.
 - **Dónde vive:** `src/components/SpanExperiment.jsx` (nuevo), `src/lib/experiment.js`, `src/mocks/metrics.js`, `src/api/endpoints.js`.
+
+## DF-042 — RF05 de la E2: origen del mensaje y filtros por reason y cola (amplía DF-015)
+
+**Fecha:** 2026-11-01 · **Unidad:** S14 (RF05) · **Decidió:** Esteban (humana: filtrar en master) + agente (columnas y lista de reasons)
+
+- **Contexto:**
+  - RF05 en la E2 incluye los rechazos de otras ciudades, en particular `IDENTITY_MISMATCH`. Es la evidencia de las anomalías 1 (duplicado) y 2 (`user_id` ajeno o malformado).
+  - S2 (#41, recuperada en #45) agrega `sourceQueue` (`city` | `market`) y `sender` (el `user_id` AMQP real) a `GET /api/messages/rejected`. El endpoint solo filtraba por `kind`.
+- **Decisión humana:** "Param en master (Recommended)". Los filtros `reason` y `sourceQueue` van como query params en master (PR del backend `feat/rf05-filtros`), no en el front: filtrar la página cargada escondería registros de otras páginas.
+- **Decisiones del agente:**
+  - Columna nueva **"Origen"**: insignia de la cola (`city.{CODE}` o `market.{CODE}`) y, debajo, el `sender` en monoespaciada. Una fila anterior a S2 (sin origen) muestra "Sin dato".
+  - Filtros **Tipo**, **Razón** y **Cola**, combinables. Cada cambio vuelve a la página 1.
+  - **Razón** es una lista con los reasons que el connector registra en la v3: `IDENTITY_MISMATCH`, `MALFORMED_MESSAGE`, `TYPE_RETIRED`, `UNKNOWN_TYPE`, `NOT_A_MARKET_TYPE`, `CYCLE_EXPIRED` y `REPORT_TOO_EARLY` (salen de `git grep` sobre el connector). Además, "Otra…" permite escribir un reason exacto.
+  - Una fila `IDENTITY_MISMATCH` se destaca con fondo rosado, porque es la que busca la demo.
+  - "Limpiar filtros" aparece cuando hay alguno activo.
+- **Dónde vive:** `src/components/RejectedMessages.jsx`, `src/lib/status.js`, `src/api/endpoints.js`.
+
+## DF-043 — Vista "Saldo": ledger local frente a la wallet (AD5)
+
+**Fecha:** 2026-11-01 · **Unidad:** S14 (AD5, anomalía 4) · **Decidió:** Esteban (humana: vista propia) + agente (estados y textos)
+
+- **Contexto:**
+  - AD5 (ADR-005): la wallet es la fuente de verdad y el ledger local es una proyección. La medida es que el saldo del dashboard coincida con `GET /balance` al cierre o que el delta se explique.
+  - `GET /api/balance` existe en la rama de S5 (Pedro, #43): `{ ledger: { cr, kwh, cycleId }, lastReconciliation: { cycleId, ledgerCr, walletCr, deltaCr, ledgerKwh, walletKwh, deltaKwh, openOps, note, takenAt } | null }`. La reconciliación se toma al `validUntil` y al `imbalance-settlement` de cada ciclo.
+- **Decisión humana:** "Vista nueva Saldo (Recommended)", ítem propio en la sidebar.
+- **Decisiones del agente** (`src/lib/balance.js`, puro y con tests):
+  - **Estado de la reconciliación:**
+    - "Cuadra" (verde) si los dos deltas son 0. En créditos, menos de medio centavo cuenta como 0.
+    - "Delta explicado" (lavanda) si hay delta y operaciones abiertas: la wallet todavía no confirma esas escrituras.
+    - "Delta sin explicar" (advertencia) si hay delta sin operaciones abiertas. Se muestra la nota de la reconciliación.
+    - "Sin reconciliación" si todavía no hay ninguna.
+  - Tabla de la última reconciliación con filas Ledger local, Wallet y Delta, y columnas CR y KWH. El delta lleva signo e ícono, no solo color.
+  - Arriba, el saldo actual del ledger local, con un texto que aclara que es la proyección y que la wallet manda.
+  - Polling cada 15 s, como RF05.
+  - **Sin tile de leaderboard:** el backend no expone el leaderboard. Queda fuera de S14 (era opcional).
+- **Mocks** (`VITE_USE_MOCKS`): una reconciliación con delta explicado por una operación abierta, que cambia a "Cuadra" cada 30 s.
+- **Dónde vive:** `src/components/BalanceDashboard.jsx` (nuevo), `src/lib/balance.js`, `src/mocks/balance.js`, `src/api/endpoints.js`, `src/components/Sidebar.jsx`, `src/App.jsx`.
+
+## DF-044 — Un solo reloj, el del ciclo, en la sidebar; las vistas quedan con un botón "Actualizar" (reemplaza el reloj de refresco de DF-034)
+
+**Fecha:** 2026-11-01 · **Unidad:** S14 (pedido de diseño de Esteban) · **Decidió:** Esteban (humana: reloj en la sidebar, siempre visible, contando el instante más importante; sacar el de cada vista) + agente (qué instante y cómo se ve)
+
+- **Contexto:** desde DF-034 cada vista tiene un anillo que descuenta hasta su próximo poll. Con siete vistas eso es un reloj distinto por pantalla, y ninguno dice lo que importa en la operación: cuánto falta para el próximo hito del ciclo. Esteban pidió un reloj siempre visible en la sidebar que cuente hasta el siguiente ciclo o el tiempo más importante.
+- **Decisión humana:** "Se va; solo el de la sidebar (Recommended)".
+- **Reloj del ciclo** (`src/components/CycleClock.jsx`):
+  - Lee el ciclo más reciente (`GET /api/cycles?limit=1`, cada 30 s) y cuenta hasta su **próximo instante** con `nextMilestone` (DF-033): el mercado abre, última oferta, último bid, el mercado cierra, el reporte vence. Los instantes son los del `status-statement`; el reloj del navegador solo se compara contra ellos (DF-027).
+  - Pasado `validUntil`, dice "Esperando el próximo ciclo" con el tiempo desde el cierre del reporte. No se inventa la apertura del siguiente: la fija su `status-statement`.
+  - Formato `mm:ss`. Anillo del avance del ciclo entre la apertura del mercado y `validUntil` (`cycleProgress`).
+  - En los últimos 60 s antes de un hito, el número cambia a tono de advertencia, con un ícono además del color.
+  - **Dónde se ve:** sobre la navegación en la sidebar abierta; en el riel, solo el anillo y `mm:ss` (el detalle va en `title`); en el celular, compacto a la derecha de la barra superior. Así está en todas las vistas y tamaños.
+  - Ciclo de la E1 (sin `market`) o sin ciclos: muestra el `cycleId` y "Sin instantes del mercado", sin cuenta.
+  - `aria-live` no: un contador que cambia cada segundo inunda el lector de pantalla. El texto completo va en `aria-label` y se lee al enfocarlo.
+- **Las vistas** conservan su polling en segundo plano. `RefreshTimer` pasa a ser un botón de ícono "Actualizar" (gira mientras carga), con la misma interfaz, así ninguna vista cambia su código.
+- **Alternativa descartada:** mantener ambos relojes. Dos contadores con significados distintos en la misma pantalla.
+- **Dónde vive:** `src/components/CycleClock.jsx` (nuevo), `src/lib/cycles.js` (`cycleClock`, `fmtMmSs`), `src/components/Sidebar.jsx`, `src/components/ui/RefreshTimer.jsx`.

@@ -51,7 +51,7 @@ export const OPERATION_TYPE = {
   give: 'Venta (give)',
   take: 'Compra (take)',
   'swap-settled': 'Swap liquidado',
-  'trade-recorded': 'Transporte cobrado',
+  'trade-recorded': 'Transporte registrado',
   'imbalance-settlement': 'Liquidación de desbalance',
   reconciliation: 'Ajuste de reconciliación',
 }
@@ -74,11 +74,14 @@ export const SWAP_STATUS = {
   rejected: { label: 'Rechazado', tone: 'error' },
 }
 
-// Estado de un bid (ADR-004).
+// Estado de un bid: el vendedor guarda accepted → proposed → settled (bids, ADR-004) y el comprador
+// sent → accepting → settled (buyer_bids, ADR-005 addendum S8); ambos terminan en rejected o expired.
 export const BID_STATE = {
   received: { label: 'Recibido', tone: 'neutral' },
   sent: { label: 'Enviado', tone: 'neutral' },
   accepted: { label: 'Aceptado', tone: 'active' },
+  proposed: { label: 'Swap propuesto', tone: 'active' },
+  accepting: { label: 'Aceptando swap', tone: 'active' },
   settled: { label: 'Liquidado', tone: 'settled' },
   rejected: { label: 'Rechazado', tone: 'error' },
   expired: { label: 'Expirado', tone: 'neutral' },

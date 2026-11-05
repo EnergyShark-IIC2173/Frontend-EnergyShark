@@ -284,14 +284,14 @@ function Offer({ offer }) {
       {offer.updates?.length ? (
         <DataTable
           caption="Actualizaciones de la oferta"
-          rowKey={(u) => `${u.type}-${u.sentAt}`}
+          rowKey={(u) => `${u.type}-${u.queuedAt ?? u.sentAt}`}
           rows={offer.updates}
           empty=""
           columns={[
             { key: 'type', label: 'Cambio', render: (u) => (u.type === 'offer-withdrawn' ? 'Oferta retirada' : 'Actualización') },
             { key: 'remaining', label: 'Quedan', unit: 'kWh', align: 'right', render: (u) => (u.type === 'offer-withdrawn' ? '' : fmt(u.remaining)) },
             { key: 'price', label: 'Precio', unit: 'CR/kWh', align: 'right', render: (u) => (u.type === 'offer-withdrawn' ? '' : fmt(u.pricePerEnergy)) },
-            { key: 'at', label: 'Hora', align: 'right', render: (u) => fmtTime(u.sentAt) },
+            { key: 'at', label: 'Hora', align: 'right', render: (u) => (u.sentAt ? fmtTime(u.sentAt) : <Badge tone="neutral">En cola</Badge>) },
           ]}
         />
       ) : null}
@@ -365,7 +365,7 @@ function SwapsPanel({ cycle, match }) {
                 <span className="flex flex-col items-end gap-1">
                   <span>−{fmt(s.transport.total)}</span>
                   <span className={`text-xs ${textSecondary}`}>{fmt(s.transport.perEnergy)} CR/kWh</span>
-                  {!s.transport.routeEnabled ? <Badge tone="error">Ruta deshabilitada</Badge> : null}
+                  {s.transport.routeEnabled === false ? <Badge tone="error">Ruta deshabilitada</Badge> : null}
                 </span>
               ) : (
                 ''

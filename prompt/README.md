@@ -19,6 +19,10 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 | `tarea-integracion-api/` | V2–V5 — integración con la API real: cliente, hook `useApiQuery`, estados de carga/error/vacío, paginación y polling; elimina los mocks | `feat/integracion-api-real`, desde `main` (PR pendiente) |
 | `tarea-fix-rediseno-studylicc/` | Fix propio (fuera de S) — rediseño con la estética de StudyLicc, modo claro y oscuro (DF-030), nulos "Sin dato" (DF-031) | `feat/rediseno-studylicc`, apilada sobre `feat/e2-retiro-negociaciones` (PR pendiente) |
 | `tarea-s11-rf01/` | S11 (E2) — RF01 del protocolo v3: resumen en el listado, detalle al expandir y mocks tras `VITE_USE_MOCKS` (01–04); retiro de la vista de negociaciones E1 y transporte por kWh en Conectividad (05–06) | 01–04: `feat/e2-base-rf01` (PR #10); 05–06: `feat/e2-retiro-negociaciones`, apilada sobre la anterior |
+| `tarea-s12-mercado/` | S12 — mercado en vivo (RF02): libro de ofertas, precio efectivo y tarifa punitiva | `feat/e2-s12-mercado`, apilada sobre `feat/rediseno-studylicc` |
+| `tarea-s13-estrategia/` | S13 — estrategia versionada y swaps en curso (RF04) y experimento de span (RF06) | `feat/e2-s13-estrategia`, apilada sobre `feat/e2-s12-mercado` |
+| `tarea-s14-rf05-saldo/` | S14 — RF05 con pares (origen y filtros) y vista Saldo (AD5) | `feat/e2-s14-rf05-saldo`, apilada sobre `feat/e2-s13-estrategia` |
+| `tarea-s23-api-real/` | S23 — integración con la API real: libro con el precio efectivo de master, retiro de los mocks, estados de bid reales y `npm test` en Node 20 (DF-045) | `feat/e2-s23-api-real`, desde `main` |
 
 **Sesión del 2026-09-29 (`tarea-v6-rediseno/`):**
 - A diferencia de la anterior, **hubo prompt maestro** de Esteban, que está literal en `01`.
@@ -51,6 +55,11 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 - Sexta vuelta (`11`): olas más orgánicas y un tiburón ocasional en el login; DF-036 antes del código.
 - Séptima vuelta (`12`): el tiburón pasa a easter egg de la aleta del logo y el botón de login pierde el borde animado; DF-037 antes del código.
 
+**Sesión del 2026-11-05 (`tarea-s23-api-real/`, E2):**
+- Prompt corto de Esteban (literal en `01`), sin modo plan ni subagentes, en la misma sesión que la E-API parte 2 del backend (#54).
+- DF-045 se commiteó antes del código. El prompt de subtarea se escribió durante la sesión y el registro al cierre.
+- **Corrección (2026-11-05):** las filas de `tarea-s12-mercado/`, `tarea-s13-estrategia/` y `tarea-s14-rf05-saldo/` estaban por error en la tabla de Pedro; se movieron a esta sección (las sesiones son de Esteban).
+
 Tareas **no** ejecutadas:
 - ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.
 - ~~La integración real de V2–V5 con la API, que depende de U9 y U10 del backend.~~ **Corrección (2026-10-07):** hecha en `tarea-integracion-api/`. Quedan pendientes el POST real contra la central y el render de V3 con datos reales (ver el AI log `2026-10-07-esteban-v2-v5-integracion-api.md`).
@@ -66,6 +75,3 @@ agente no escribió credenciales.
 | `tarea-sesion-auth0/` | V1.fix — sesión que sobrevive a recargar (refresh tokens) y `npm test` | `fix/auth0-sesion` (fork `Pedr0sit0s`), desde `main` |
 | `tarea-contratos-org/` | RDOC04.fix — referencias al repo de contratos y al `AGENTS.md` org-level | `docs/contratos-org`, apilada sobre `fix/auth0-sesion` |
 | `tarea-readme-front/` | Docs — README del frontend y guía de deploy S3 + CloudFront | `docs/readme-front` (fork `Pedr0sit0s`), desde `main` |
-| `tarea-s12-mercado/` | S12 — mercado en vivo (RF02): libro de ofertas, precio efectivo y tarifa punitiva | `feat/e2-s12-mercado`, apilada sobre `feat/rediseno-studylicc` |
-| `tarea-s13-estrategia/` | S13 — estrategia versionada y swaps en curso (RF04) y experimento de span (RF06) | `feat/e2-s13-estrategia`, apilada sobre `feat/e2-s12-mercado` |
-| `tarea-s14-rf05-saldo/` | S14 — RF05 con pares (origen y filtros) y vista Saldo (AD5) | `feat/e2-s14-rf05-saldo`, apilada sobre `feat/e2-s13-estrategia` |

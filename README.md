@@ -1,7 +1,7 @@
-# EnergyShark: frontend (E1, IIC2173)
+# EnergyShark: frontend (E2, IIC2173)
 
-SPA del panel de operación del nodo de energía de la ciudad: login con Auth0 y cuatro vistas sobre
-la API del backend.
+SPA del panel de operación del nodo de energía de la ciudad (TiburonShark): login con Auth0 y siete vistas
+sobre la API del backend, para el mercado entre ciudades del protocolo v3.
 
 | | |
 |---|---|
@@ -12,16 +12,19 @@ la API del backend.
 
 ## Qué hace
 
-| Vista | Qué muestra | Requisito |
-|---|---|---|
-| Login (V1) | Inicio de sesión con Auth0. La sesión sobrevive a recargar la página (refresh tokens, DF-023) | G06 |
-| Historial de ciclos (V2) | Por ciclo: status-statement, transfers, demand-statements, negociaciones, reporte enviado, balances finales y la última operación aplicada | RF01 |
-| Conectividad (V3) | La distance-table vigente: destino, distancia, `transportCost` y si está habilitado | RF02 |
-| Negociaciones (V4) | Crear una propuesta en la ventana abierta y seguir su confirmación y pago; historial con estado final | RF04 |
-| Errores / NACKs (V5) | Duplicados, NACKs y mensajes descartados, filtrables | RF05 |
+| Vista | Qué muestra | Endpoint | Requisito |
+|---|---|---|---|
+| Login | Inicio de sesión con Auth0. La sesión sobrevive a recargar la página (refresh tokens, DF-023) | — | G06, G07 |
+| Historial de ciclos | Por ciclo: status-statement, financiamiento, oferta y sus actualizaciones, bids enviados y recibidos con resultado, swaps con estado final y transporte, `imbalance-settlement`, reporte y la **última operación aplicada** | `GET /api/cycles`, `GET /api/cycles/{cycleId}` | RF01 |
+| Mercado | Libro de ofertas de `market.{CODE}`: precio, `remaining`, transporte por kWh, precio efectivo (calculado por master) y rutas deshabilitadas marcadas | `GET /api/market/book`, `GET /api/distance-table` | RF02 |
+| Estrategia | Versión vigente, formulario de una versión nueva (precio y cantidad de la oferta, políticas, span), historial y swaps en curso. Aplica desde el siguiente ciclo | `GET/POST /api/strategy`, `GET /api/strategy/versions`, `GET /api/swaps?status=open` | RF04, AD6 |
+| Experimento span | Por ciclo (span usado según `cycle_strategy`, déficit, cubierto, costo efectivo vs baseline, bids rechazados) y agregado por valor de span | `GET /api/metrics/cycles`, `GET /api/metrics/spans` | RF06, AD6 |
+| Saldo | Ledger local frente a la wallet (CR y KWH), delta y operaciones abiertas de la última reconciliación | `GET /api/balance` | AD5 |
+| Conectividad | La distance-table vigente (rige la última), con transporte por kWh y la tarifa punitiva de las rutas caídas | `GET /api/distance-table` | RF02 |
+| Errores / NACKs | Duplicados, NACKs y descartes, también los de pares (`IDENTITY_MISMATCH`), con cola de origen y remitente; filtros por tipo, razón y cola | `GET /api/messages/rejected` | RF05 |
 
 Todas las llamadas a la API llevan el JWT de Auth0. Las vistas se actualizan solas (polling) y
-muestran estados de carga, vacío y error. El diseño (V6) usa Tailwind CSS v4.
+muestran estados de carga, vacío y error. El reloj del ciclo vive en la sidebar (DF-044).
 
 **Stack:** React 19, Vite 8, Tailwind CSS 4, `@auth0/auth0-react`.
 
@@ -30,8 +33,8 @@ muestran estados de carga, vacío y error. El diseño (V6) usa Tailwind CSS v4.
 ```
 src/api/          cliente HTTP con el token (client.js), una función por endpoint (endpoints.js), useApiQuery
 src/auth/         Auth0Provider (refresh tokens en localStorage)
-src/components/   las vistas V2–V5 y ui/ (componentes de presentación, sin estado)
-src/lib/          lógica pura con tests: ciclos, formato, validación de propuestas
+src/components/   las vistas, cycles/ y strategy/ (piezas de cada vista) y ui/ (presentación, sin estado)
+src/lib/          lógica pura con tests: ciclos, libro de ofertas, estrategia, experimento, saldo, formato
 docs/             decisiones del front (decisiones-frontend.md, DF-001…), deploy, diseño, AI logs (ai_docs/)
 prompt/           prompts literales de cada subtarea hecha con IA (RDOC02)
 ```
@@ -53,8 +56,8 @@ npm run dev              # http://localhost:5173
 | `VITE_AUTH0_AUDIENCE` | `https://api.energyshark.internal` | Tiene que ser igual al audience del API Gateway y al `AUTH0_AUDIENCE` de master |
 | `VITE_API_BASE_URL` | vacío, o `https://api.tiburonshark.me` | Vacío: el proxy de Vite manda `/api` y `/health` a master local en `:3001` |
 
-- **Contra el backend local:** `VITE_API_BASE_URL` vacío y el backend levantado según su README
-  (`docker compose up`).
+- **Contra el backend local:** `VITE_API_BASE_URL` vacío y master levantado en `:3001` según el README del
+  backend. No hay mocks (se retiraron en S23, DF-045): sin backend, las vistas muestran el error.
 - **Contra la API en producción:** `VITE_API_BASE_URL=https://api.tiburonshark.me`. Funciona desde
   `localhost:5173`, que está permitido en el CORS del Gateway y en Auth0. Usa ese puerto.
 - Vite lee las variables **al construir**: si cambias el `.env`, reinicia `npm run dev`.

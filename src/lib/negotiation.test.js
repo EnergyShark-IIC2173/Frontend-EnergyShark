@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { giveSpare, paymentAmount, priceCap, round2, validateProposal } from './negotiation.js'
+import { paymentAmount, priceCap, round2 } from './negotiation.js'
 
 // Ciclo real de producción (docs/integracion-backend.md, B.4), recortado.
 const openCycle = {
@@ -26,39 +26,4 @@ test('round2 y paymentAmount', () => {
   // 25678.82 × 68.76 = 1765675.6632 → 1765675.66
   assert.equal(paymentAmount(openCycle.voluntaryNegotiations[0]), 1765675.66)
   assert.equal(paymentAmount({ status: 'confirmed', quantity: 1, settledPricePerEnergy: 1 }), null)
-})
-
-test('giveSpare descuenta los give comprometidos del ciclo', () => {
-  // max(0, 37831.26 − 12152.44) − 25678.82 = 25678.82 − 25678.82 = 0
-  assert.equal(giveSpare(openCycle), 0)
-  const sinGives = { ...openCycle, voluntaryNegotiations: [{ direction: 'give', quantity: 1000, status: 'expired' }] }
-  assert.equal(giveSpare(sinGives), 25678.82)
-  assert.equal(giveSpare({ statusStatement: null }), null)
-})
-
-test('validateProposal: válida bajo el tope', () => {
-  const r = validateProposal({ direction: 'take', quantity: '100', pricePerEnergy: '65.49' }, openCycle)
-  assert.equal(r.ok, true)
-  assert.equal(r.cap, 68.76)
-})
-
-test('validateProposal: el tope bloquea', () => {
-  const r = validateProposal({ direction: 'take', quantity: '100', pricePerEnergy: '68.77' }, openCycle)
-  assert.equal(r.ok, false)
-  assert.match(r.errors.pricePerEnergy, /tope de 68,76/)
-})
-
-test('validateProposal: la capacidad del give solo advierte', () => {
-  const r = validateProposal({ direction: 'give', quantity: '10', pricePerEnergy: '68.76' }, openCycle)
-  assert.equal(r.ok, true)
-  assert.match(r.warnings.quantity, /OVER_CAPACITY/)
-})
-
-test('validateProposal: vacíos, ceros, negativos y sin ciclo abierto', () => {
-  const r = validateProposal({ direction: 'take', quantity: '', pricePerEnergy: '-1' }, null)
-  assert.equal(r.ok, false)
-  assert.equal(r.errors.quantity, 'Ingresa un número.')
-  assert.equal(r.errors.pricePerEnergy, 'Debe ser mayor que 0.')
-  assert.match(r.errors.form, /No hay una ventana/)
-  assert.equal(validateProposal({ direction: 'take', quantity: '0', pricePerEnergy: '1' }, openCycle).errors.quantity, 'Debe ser mayor que 0.')
 })

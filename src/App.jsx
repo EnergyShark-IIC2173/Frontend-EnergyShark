@@ -7,7 +7,6 @@ import { LogoutButton } from './components/LogoutButton'
 import { CycleHistory } from './components/CycleHistory'
 import { DistanceTable } from './components/DistanceTable'
 import tiburonImg from './assets/tiburon.png'
-import { NegotiationAdmin } from './components/NegotiationAdmin'
 import { RejectedMessages } from './components/RejectedMessages'
 import { AuthScreen, LogoMark } from './components/ui/AuthScreen'
 import { Icon } from './components/ui/Icon'
@@ -88,13 +87,6 @@ function App() {
           <Icon name="network" />
           Conectividad
         </button>
-        <button 
-          onClick={() => setActiveView('negotiations')}
-          className={activeView === 'negotiations' ? navItemActive : navItemInactive}
-        >
-          <Icon name="handshake" />
-          Negociaciones
-        </button>
 
         <button 
           onClick={() => setActiveView('rejected')}
@@ -110,7 +102,6 @@ function App() {
           {/* Renderizado condicional de las vistas */}
           {activeView === 'history' && <CycleHistory />}
           {activeView === 'distance' && <DistanceTable />}
-          {activeView === 'negotiations' && <NegotiationAdmin />}
           {activeView === 'rejected' && <RejectedMessages />}
         </div>
       </main>

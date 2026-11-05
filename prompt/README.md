@@ -17,7 +17,7 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 | `tarea-v6-tailwind/` | V6 — skill de diseño y migración de estilos a Tailwind CSS v4 | `v6-deploy` (PR pendiente) |
 | `tarea-v6-rediseno/` | V6 — rediseño visual: login, app shell y vistas V2–V5 (solo capa visual) | `feat/v6-rediseno`, apilada sobre `v6-deploy` (PR pendiente) |
 | `tarea-integracion-api/` | V2–V5 — integración con la API real: cliente, hook `useApiQuery`, estados de carga/error/vacío, paginación y polling; elimina los mocks | `feat/integracion-api-real`, desde `main` (PR pendiente) |
-| `tarea-s11-rf01/` | S11 (E2) — RF01 del protocolo v3: resumen en el listado, detalle al expandir y mocks tras `VITE_USE_MOCKS` | `feat/e2-base-rf01`, desde `main` (PR pendiente) |
+| `tarea-s11-rf01/` | S11 (E2) — RF01 del protocolo v3: resumen en el listado, detalle al expandir y mocks tras `VITE_USE_MOCKS` (01–04); retiro de la vista de negociaciones E1 y transporte por kWh en Conectividad (05–06) | 01–04: `feat/e2-base-rf01` (PR #10); 05–06: `feat/e2-retiro-negociaciones`, apilada sobre la anterior |
 
 **Sesión del 2026-09-29 (`tarea-v6-rediseno/`):**
 - A diferencia de la anterior, **hubo prompt maestro** de Esteban, que está literal en `01`.
@@ -36,6 +36,7 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 - Prompt corto de Esteban (literal en `01`) y tres decisiones humanas por pregunta del agente. Sin modo plan y sin subagentes.
 - Las decisiones DF-024 a DF-027 se commitearon antes del código (`71867c0`).
 - Los "prompts de subtarea" de `01` a `04` se escribieron **al cierre** de la sesión, a partir de lo hecho en la rama.
+- Segunda parte (`05`–`06`): DF-028 y DF-029 antes del código (`632e5f0`); registros escritos al cierre.
 
 Tareas **no** ejecutadas:
 - ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.

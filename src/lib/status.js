@@ -88,6 +88,3 @@ export const marketPhaseLabel = (phase) => MARKET_PHASE[phase] ?? fallback(phase
 export const swapStatus = (status) => SWAP_STATUS[status] ?? fallback(status)
 export const bidState = (state) => BID_STATE[state] ?? fallback(state)
 export const swapRole = (role) => SWAP_ROLE[role] ?? role ?? '—'
-
-// Estados que todavía pueden cambiar: activan el polling de 3 s en V4 (DF-015).
-export const isActiveNegotiation = (n) => n?.status === 'proposed' || n?.status === 'confirmed'

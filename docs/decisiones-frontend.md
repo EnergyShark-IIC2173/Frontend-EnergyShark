@@ -446,3 +446,36 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 - **Reporte pendiente:** en un ciclo v3, mientras no pase `validUntil`; en uno E1, la regla de DF-019.
 - **Última operación:** como el endpoint es propio, `lastOperationApplied` trae `ref` (`swapId` o `msgId`) además de `type` y `appliedAt`. El ítem se marca por igualdad exacta de esa referencia, sin heurística de tiempos. Tipos v3: `transfer` (financiamiento), `swap-settled`, `trade-recorded` (transporte), `imbalance-settlement` y `reconciliation`. Si no viene `ref`, se cae a la heurística de DF-020.
 - **Dónde vive:** `src/lib/cycles.js` (`marketPhase`, `reportPending`, `matchLastOperation`), con tests.
+
+## DF-028 — Se retira la vista de negociaciones de la E1 (V4) en S11, no en S13
+
+**Fecha:** 2026-11-01 · **Unidad:** S11 · **Decidió:** Esteban (humana)
+
+- **Contexto:**
+  - En la v3 la central responde `TYPE_RETIRED` (410) a `negotiation-proposal`, `give` y `take`. La vista "Negociaciones" (RF04 de la E1) solo puede crear propuestas que fallan.
+  - El roadmap ponía el retiro en S13, pero S11 y S13 son de Esteban y no dependen de nadie más.
+  - DF-024 deja el listado de ciclos sin `statusStatement`, que la vista usaba para encontrar la ventana abierta (DF-021).
+- **Decisión humana:** retirarla ahora.
+  - Se borran `NegotiationAdmin.jsx` y su pestaña.
+  - Se borran las funciones del cliente `createNegotiation`, `listNegotiations` y `getNegotiation`.
+  - Se borra la lógica que solo usaba esa vista, con sus tests: `findOpenCycle`, `findOpenCycleWithoutStatus`, `estimateNextWindow` (DF-021), `giveSpare` y `validateProposal` (DF-017), e `isActiveNegotiation`.
+  - Se conservan `round2`, `priceCap`, `paymentAmount` y las etiquetas de negociación, que RF01 usa para los ciclos de la E1 (DF-026). `fmtCountdown` también se conserva: es un formato genérico.
+- **Fuera de alcance:** `POST /api/negotiations` en master lo retira Francisca en S3. Mientras tanto, el front simplemente deja de llamarlo.
+- **Reemplaza:** DF-017 y DF-021. La administración de estrategia (RF04 de la E2) entra en S13 como vista nueva.
+- **Dónde vive:** `src/App.jsx`, `src/api/endpoints.js`, `src/lib/cycles.js`, `src/lib/negotiation.js`, `src/lib/status.js`.
+
+## DF-029 — Conectividad: transporte por kWh y rutas deshabilitadas destacadas
+
+**Fecha:** 2026-11-01 · **Unidad:** S11 (base de RF02) · **Decidió:** Esteban (alcance) + agente
+
+- **Contexto:**
+  - En la E2 el transporte se cobra al comprador por cada kWh: `round2(distance_km × transportCost)`. El precio efectivo de comprarle a una ciudad es su precio más ese transporte (RF02, anomalía 6).
+  - `distance` viaja en metros: el enunciado de la E1 da 62 763 183 → "62.763 km" y 1 kWh ≈ 213 créditos con `transportCost` 0,0034.
+  - El endpoint actual ya trae `enabled`. `disabledRouteTransportCost` lo expone S6 (Francisca).
+- **Decisión:**
+  - Nueva columna "Transporte por kWh" = `round2(distance / 1000 × transportCost)`, calculada en `src/lib/transport.js` con tests.
+  - En una ruta deshabilitada, la celda dice "Tarifa punitiva" en vez de la cifra, porque esa tarifa no viene en el endpoint actual.
+  - Fila deshabilitada con fondo rosado y un resumen arriba de la tabla: "N rutas deshabilitadas: X, Y".
+  - Distancia mostrada en km en vez de metros.
+- **Alternativa descartada:** esperar a S6 para tocar la vista. Lo de esta DF no depende de campos nuevos.
+- **Dónde vive:** `src/components/DistanceTable.jsx`, `src/lib/transport.js`.

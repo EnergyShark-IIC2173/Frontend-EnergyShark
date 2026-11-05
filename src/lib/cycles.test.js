@@ -96,3 +96,28 @@ test('buyerTotals suma solo compras liquidadas', () => {
   assert.deepEqual(buyerTotals(cycle), { kwh: 10300, energy: 3639000, transport: 897612 })
   assert.deepEqual(buyerTotals({}), { kwh: 0, energy: 0, transport: 0 })
 })
+
+test('nextMilestone devuelve el próximo instante de la central (DF-033)', async () => {
+  const { nextMilestone } = await import('./cycles.js')
+  const t = Date.parse('2026-11-01T12:00:00Z')
+  const cycle = {
+    market: { opensAt: '2026-11-01T12:00:00Z', lastOfferAt: '2026-11-01T12:08:30Z', lastBidAt: '2026-11-01T12:09:00Z', closesAt: '2026-11-01T12:10:00Z' },
+    validUntil: '2026-11-01T12:15:00Z',
+  }
+  assert.equal(nextMilestone(cycle, t - 1).key, 'opensAt')
+  assert.equal(nextMilestone(cycle, t + 60_000).key, 'lastOfferAt')
+  assert.equal(nextMilestone(cycle, t + 9.5 * 60_000).key, 'closesAt')
+  assert.equal(nextMilestone(cycle, t + 12 * 60_000).key, 'validUntil')
+  assert.equal(nextMilestone(cycle, t + 16 * 60_000), null)
+  assert.equal(nextMilestone({ phase: 'closed' }), null)
+})
+
+test('cycleProgress va de 0 a 1 entre opensAt y validUntil', async () => {
+  const { cycleProgress } = await import('./cycles.js')
+  const t = Date.parse('2026-11-01T12:00:00Z')
+  const cycle = { market: { opensAt: '2026-11-01T12:00:00Z', closesAt: '2026-11-01T12:10:00Z' }, validUntil: '2026-11-01T12:15:00Z' }
+  assert.deepEqual(cycleProgress(cycle, t - 5000), { value: 0, marketEnds: 2 / 3 })
+  assert.equal(cycleProgress(cycle, t + 7.5 * 60_000).value, 0.5)
+  assert.equal(cycleProgress(cycle, t + 60 * 60_000).value, 1)
+  assert.equal(cycleProgress({}), null)
+})

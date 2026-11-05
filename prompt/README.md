@@ -17,6 +17,7 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 | `tarea-v6-tailwind/` | V6 — skill de diseño y migración de estilos a Tailwind CSS v4 | `v6-deploy` (PR pendiente) |
 | `tarea-v6-rediseno/` | V6 — rediseño visual: login, app shell y vistas V2–V5 (solo capa visual) | `feat/v6-rediseno`, apilada sobre `v6-deploy` (PR pendiente) |
 | `tarea-integracion-api/` | V2–V5 — integración con la API real: cliente, hook `useApiQuery`, estados de carga/error/vacío, paginación y polling; elimina los mocks | `feat/integracion-api-real`, desde `main` (PR pendiente) |
+| `tarea-fix-rediseno-studylicc/` | Fix propio (fuera de S) — rediseño con la estética de StudyLicc, modo claro y oscuro (DF-030), nulos "Sin dato" (DF-031) | `feat/rediseno-studylicc`, apilada sobre `feat/e2-retiro-negociaciones` (PR pendiente) |
 | `tarea-s11-rf01/` | S11 (E2) — RF01 del protocolo v3: resumen en el listado, detalle al expandir y mocks tras `VITE_USE_MOCKS` (01–04); retiro de la vista de negociaciones E1 y transporte por kWh en Conectividad (05–06) | 01–04: `feat/e2-base-rf01` (PR #10); 05–06: `feat/e2-retiro-negociaciones`, apilada sobre la anterior |
 
 **Sesión del 2026-09-29 (`tarea-v6-rediseno/`):**
@@ -37,6 +38,18 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 - Las decisiones DF-024 a DF-027 se commitearon antes del código (`71867c0`).
 - Los "prompts de subtarea" de `01` a `04` se escribieron **al cierre** de la sesión, a partir de lo hecho en la rama.
 - Segunda parte (`05`–`06`): DF-028 y DF-029 antes del código (`632e5f0`); registros escritos al cierre.
+
+**Sesión del 2026-11-01 (`tarea-fix-rediseno-studylicc/`, fix propio):**
+- Prompt de Esteban con un bloque pegado (la guía de StudyLicc), literal en `01` junto con sus 4 respuestas y el rechazo del primer plan (papel blanco en vez de crema).
+- Modo plan con aprobación. Sin subagentes.
+- DF-030 y DF-031 se commitearon antes del código (`fd16998`).
+- Los "prompts de subtarea" de `01` a `05` son extractos literales del plan aprobado y el de `06` se escribió durante la sesión. Los registros se escribieron al cierre.
+- Segunda vuelta (`07`): pedidos de Esteban tras revisar el primer rediseño; DF-032 antes del código (`2c6f582`) y un commit por pedido. El prompt de subtarea se escribió durante la sesión.
+- Tercera vuelta (`08`): intro, grilla con diálogo, navegación y detalle por pestañas; DF-033 antes del código (`ba63560`) y un commit por pedido. El prompt de subtarea se escribió durante la sesión.
+- Cuarta vuelta (`09`): TiburonShark, aleta hacia la izquierda, paginador único y reloj; DF-034 antes del código y un commit por pedido.
+- Quinta vuelta (`10`): login en movimiento; DF-035 antes del código y un commit por pedido. Esteban eligió el fondo "Mar de olas" entre cuatro opciones.
+- Sexta vuelta (`11`): olas más orgánicas y un tiburón ocasional en el login; DF-036 antes del código.
+- Séptima vuelta (`12`): el tiburón pasa a easter egg de la aleta del logo y el botón de login pierde el borde animado; DF-037 antes del código.
 
 Tareas **no** ejecutadas:
 - ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.

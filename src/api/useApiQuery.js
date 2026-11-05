@@ -8,10 +8,13 @@ import { useApiClient } from './client'
 // - requestId descarta respuestas que llegan desordenadas (p. ej. al cambiar de página rápido).
 // - El polling es silencioso (no vuelve a "cargando"), se salta con la pestaña oculta y se limpia al
 //   desmontar o al cambiar pollMs. pollMs puede ser una función de la data (V4: 3 s solo con filas activas).
+// - updatedAt (hora del último dato bueno) e interval alimentan el reloj de actualización (DF-034). Una recarga
+//   manual reinicia el intervalo, así el reloj y el poll no se desfasan.
 export function useApiQuery(fetcher, params = null, { pollMs = null, enabled = true } = {}) {
   const { apiFetch } = useApiClient()
   const { loginWithRedirect } = useAuth0()
-  const [state, setState] = useState({ data: null, loading: enabled, error: null })
+  const [state, setState] = useState({ data: null, loading: enabled, error: null, updatedAt: null })
+  const [generation, setGeneration] = useState(0)
   const apiRef = useRef(apiFetch)
   const fetcherRef = useRef(fetcher)
   const requestId = useRef(0)
@@ -26,7 +29,7 @@ export function useApiQuery(fetcher, params = null, { pollMs = null, enabled = t
     if (!silent) setState((s) => ({ ...s, loading: true }))
     try {
       const data = await fetcherRef.current(apiRef.current)
-      if (id === requestId.current) setState({ data, loading: false, error: null })
+      if (id === requestId.current) setState({ data, loading: false, error: null, updatedAt: Date.now() })
     } catch (error) {
       // Se conserva la última data buena: un poll fallido no vacía la vista.
       if (id === requestId.current) setState((s) => ({ ...s, loading: false, error }))
@@ -45,11 +48,14 @@ export function useApiQuery(fetcher, params = null, { pollMs = null, enabled = t
       if (!document.hidden) run({ silent: true })
     }, interval)
     return () => clearInterval(timer)
-  }, [enabled, interval, run])
+  }, [enabled, interval, run, generation])
 
-  const reload = useCallback(() => run(), [run])
+  const reload = useCallback(() => {
+    setGeneration((g) => g + 1)
+    return run()
+  }, [run])
   // Para insertar de inmediato lo que devolvió un POST, sin esperar el próximo poll.
   const setData = useCallback((updater) => setState((s) => ({ ...s, data: updater(s.data) })), [])
 
-  return { ...state, reload, setData, relogin: loginWithRedirect }
+  return { ...state, interval, reload, setData, relogin: loginWithRedirect }
 }

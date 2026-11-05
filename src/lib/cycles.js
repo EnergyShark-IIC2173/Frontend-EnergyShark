@@ -88,3 +88,34 @@ export function buyerTotals(cycle) {
     transport: Math.round(sum((s) => s.transport?.total) * 100) / 100,
   }
 }
+
+// Próximo instante de la central para la cuenta regresiva de la tarjeta del ciclo actual (DF-033).
+// Solo compara el reloj contra los instantes del status-statement (DF-027). Sin próximo instante: null.
+export function nextMilestone(cycle, now = Date.now()) {
+  const m = cycle?.market
+  if (!m) return null
+  const steps = [
+    ['opensAt', 'El mercado abre', m.opensAt],
+    ['lastOfferAt', 'Última oferta', m.lastOfferAt],
+    ['lastBidAt', 'Último bid', m.lastBidAt],
+    ['closesAt', 'El mercado cierra', m.closesAt],
+    ['validUntil', 'El reporte vence', cycle.validUntil],
+  ]
+  for (const [key, label, at] of steps) {
+    if (Number.isFinite(time(at)) && time(at) > now) return { key, label, at }
+  }
+  return null
+}
+
+// Avance del ciclo entre la apertura del mercado y validUntil, de 0 a 1, y dónde cae el cierre del mercado.
+export function cycleProgress(cycle, now = Date.now()) {
+  const start = time(cycle?.market?.opensAt)
+  const end = time(cycle?.validUntil)
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null
+  const clamp = (x) => Math.min(1, Math.max(0, x))
+  const closes = time(cycle.market.closesAt)
+  return {
+    value: clamp((now - start) / (end - start)),
+    marketEnds: Number.isFinite(closes) ? clamp((closes - start) / (end - start)) : null,
+  }
+}

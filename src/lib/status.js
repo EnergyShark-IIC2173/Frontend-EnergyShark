@@ -1,31 +1,33 @@
-// Traducciones y tonos de Badge. Los estados viajan en inglés y solo se traducen al mostrar.
-// Naranja queda reservado para "duplicate" (DF-008).
+import { EMPTY } from './format.js'
 
-const fallback = (value) => ({ label: value ?? '—', tone: 'neutral' })
+// Traducciones y tonos de Badge. Los estados viajan en inglés y solo se traducen al mostrar.
+// Tonos semánticos de DF-030: warning (rose) queda para "duplicate" y el periodo de cierre; error (coral), solo errores.
+
+const fallback = (value) => ({ label: value ?? EMPTY, tone: 'neutral' })
 
 export const NEGOTIATION_STATUS = {
-  proposed: { label: 'Propuesta', tone: 'cyan' },
-  confirmed: { label: 'Confirmada', tone: 'violet' },
-  paid: { label: 'Pagada', tone: 'success' },
+  proposed: { label: 'Propuesta', tone: 'active' },
+  confirmed: { label: 'Confirmada', tone: 'category' },
+  paid: { label: 'Pagada', tone: 'settled' },
   expired: { label: 'Expirada', tone: 'neutral' },
-  rejected: { label: 'Rechazada', tone: 'pink' },
+  rejected: { label: 'Rechazada', tone: 'error' },
 }
 
 export const REJECTED_KIND = {
-  duplicate: { label: 'Duplicado', tone: 'orange' },
-  nack: { label: 'NACK', tone: 'pink' },
+  duplicate: { label: 'Duplicado', tone: 'warning' },
+  nack: { label: 'NACK', tone: 'error' },
   discarded: { label: 'Descartado', tone: 'neutral' },
 }
 
 export const CYCLE_PHASE = {
-  negotiating: { label: 'En negociación', tone: 'cyan' },
-  consuming: { label: 'Consumiendo', tone: 'violet' },
+  negotiating: { label: 'En negociación', tone: 'active' },
+  consuming: { label: 'Consumiendo', tone: 'category' },
   closed: { label: 'Cerrado', tone: 'neutral' },
 }
 
 export const ORIGIN = {
   auto: { label: 'Automática', tone: 'neutral' },
-  manual: { label: 'Manual', tone: 'cyan' },
+  manual: { label: 'Manual', tone: 'active' },
 }
 
 export const DIRECTION = {
@@ -47,29 +49,29 @@ export const OPERATION_TYPE = {
 
 // Fases v3 derivadas de los instantes del status-statement (DF-027).
 export const MARKET_PHASE = {
-  pending: { label: 'Consumo (sin mercado)', tone: 'violet' },
-  market: { label: 'Mercado abierto', tone: 'cyan' },
-  closing: { label: 'Periodo de cierre', tone: 'orange' },
+  pending: { label: 'Consumo (sin mercado)', tone: 'category' },
+  market: { label: 'Mercado abierto', tone: 'active' },
+  closing: { label: 'Periodo de cierre', tone: 'warning' },
   closed: { label: 'Cerrado', tone: 'neutral' },
 }
 
 // Estado final de un swap en la wallet (Referencia API v3). accepted = recibido y sin resolver.
 export const SWAP_STATUS = {
   accepted: { label: 'Enviado', tone: 'neutral' },
-  proposed: { label: 'Propuesto', tone: 'cyan' },
-  settled: { label: 'Liquidado', tone: 'success' },
+  proposed: { label: 'Propuesto', tone: 'active' },
+  settled: { label: 'Liquidado', tone: 'settled' },
   cancelled: { label: 'Cancelado', tone: 'neutral' },
   expired: { label: 'Expirado', tone: 'neutral' },
-  rejected: { label: 'Rechazado', tone: 'pink' },
+  rejected: { label: 'Rechazado', tone: 'error' },
 }
 
-// Estado de un bid (ADR-004). Naranja sigue reservado para duplicados (DF-008).
+// Estado de un bid (ADR-004).
 export const BID_STATE = {
   received: { label: 'Recibido', tone: 'neutral' },
   sent: { label: 'Enviado', tone: 'neutral' },
-  accepted: { label: 'Aceptado', tone: 'cyan' },
-  settled: { label: 'Liquidado', tone: 'success' },
-  rejected: { label: 'Rechazado', tone: 'pink' },
+  accepted: { label: 'Aceptado', tone: 'active' },
+  settled: { label: 'Liquidado', tone: 'settled' },
+  rejected: { label: 'Rechazado', tone: 'error' },
   expired: { label: 'Expirado', tone: 'neutral' },
 }
 
@@ -82,9 +84,9 @@ export const negotiationStatus = (status) => NEGOTIATION_STATUS[status] ?? fallb
 export const rejectedKind = (kind) => REJECTED_KIND[kind] ?? fallback(kind)
 export const cyclePhase = (phase) => CYCLE_PHASE[phase] ?? fallback(phase)
 export const origin = (value) => ORIGIN[value] ?? fallback(value)
-export const directionLabel = (direction) => DIRECTION[direction] ?? direction ?? '—'
-export const operationLabel = (type) => OPERATION_TYPE[type] ?? type ?? '—'
+export const directionLabel = (direction) => DIRECTION[direction] ?? direction ?? EMPTY
+export const operationLabel = (type) => OPERATION_TYPE[type] ?? type ?? EMPTY
 export const marketPhaseLabel = (phase) => MARKET_PHASE[phase] ?? fallback(phase)
 export const swapStatus = (status) => SWAP_STATUS[status] ?? fallback(status)
 export const bidState = (state) => BID_STATE[state] ?? fallback(state)
-export const swapRole = (role) => SWAP_ROLE[role] ?? role ?? '—'
+export const swapRole = (role) => SWAP_ROLE[role] ?? role ?? EMPTY

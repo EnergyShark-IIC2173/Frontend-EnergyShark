@@ -4,10 +4,11 @@ import { useApiQuery } from '../api/useApiQuery'
 import { fmtDate, orDash, truncId } from '../lib/format'
 import { REJECTED_KIND, rejectedKind } from '../lib/status'
 import { Badge } from './ui/Badge'
-import { Pagination } from './ui/Pagination'
+import { Pager } from './ui/Pager'
 import { EmptyState, ErrorState, LoadingState, StaleNotice } from './ui/States'
 import { TableCard } from './ui/TableCard'
-import { RefreshButton, ViewHeader } from './ui/ViewHeader'
+import { RefreshTimer } from './ui/RefreshTimer'
+import { Marker, ViewHeader } from './ui/ViewHeader'
 import { inputBase, labelBase, td, th, tr } from './ui/classes'
 
 const LIMIT = 25
@@ -17,12 +18,19 @@ const POLL_MS = 15_000
 export function RejectedMessages() {
   const [page, setPage] = useState(1)
   const [kind, setKind] = useState('')
-  const { data, loading, error, reload, relogin } = useApiQuery(
+  const { data, loading, error, reload, relogin, updatedAt, interval } = useApiQuery(
     (api) => listRejected(api, { page, limit: LIMIT, kind }),
     { page, kind },
     { pollMs: POLL_MS },
   )
   const rows = data?.data ?? []
+
+  // Mismo paginador que el historial (DF-034): fijo al pie y, al cambiar de página, la vista sube al inicio.
+  function goToPage(next) {
+    setPage(next)
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+  }
 
   let content
   if (!data && loading) content = <LoadingState label="Cargando mensajes rechazados…" />
@@ -30,7 +38,7 @@ export function RejectedMessages() {
   else if (rows.length === 0) {
     content = (
       <EmptyState icon="alert" title={kind ? `Sin mensajes de tipo "${rejectedKind(kind).label}"` : 'Aún no hay duplicados, NACKs ni descartados'}>
-        Se revisa de nuevo cada {POLL_MS / 1000} s.
+        Aparecen aquí en cuanto se registran.
       </EmptyState>
     )
   } else {
@@ -57,9 +65,9 @@ export function RejectedMessages() {
                   <td className={td}>
                     <Badge tone={k.tone}>{k.label}</Badge>
                   </td>
-                  <td className={`${td} font-mono text-xs whitespace-nowrap text-text-h`}>{orDash(msg.type)}</td>
-                  <td className={`${td} font-mono text-xs text-text-h`}>{orDash(msg.reason)}</td>
-                  <td className={`${td} tabular-nums`}>{orDash(msg.code)}</td>
+                  <td className={`${td} font-mono text-xs whitespace-nowrap text-ink dark:text-paper`}>{orDash(msg.type)}</td>
+                  <td className={`${td} font-mono text-xs text-ink dark:text-paper`}>{orDash(msg.reason)}</td>
+                  <td className={`${td} whitespace-nowrap tabular-nums`}>{orDash(msg.code)}</td>
                   <td className={`${td} font-mono text-xs whitespace-nowrap`} title={msg.msgId ?? undefined}>{truncId(msg.msgId)}</td>
                   <td className={`${td} font-mono text-xs whitespace-nowrap`} title={msg.idpk ?? undefined}>{truncId(msg.idpk)}</td>
                   <td className={`${td} min-w-56`}>{orDash(msg.detail)}</td>
@@ -69,14 +77,14 @@ export function RejectedMessages() {
             })}
           </tbody>
         </TableCard>
-        <Pagination page={data.page} totalPages={data.totalPages} total={data.total} onChange={setPage} disabled={loading} />
+        <Pager label="Paginación de mensajes" noun="mensajes" page={data.page} totalPages={data.totalPages} total={data.total} onChange={goToPage} disabled={loading} />
       </>
     )
   }
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <ViewHeader title="Registro de Duplicados y NACKs" subtitle={`Duplicados, NACKs y mensajes descartados (RF05). Se actualiza cada ${POLL_MS / 1000} s.`}>
+      <ViewHeader title={<>Registro de duplicados y <Marker>NACKs</Marker></>} subtitle="Duplicados, NACKs y mensajes descartados.">
         <div className="flex flex-col gap-2">
           <label htmlFor="rejected-kind" className={labelBase}>Tipo</label>
           <select
@@ -94,9 +102,14 @@ export function RejectedMessages() {
             ))}
           </select>
         </div>
-        <RefreshButton onClick={reload} loading={loading} />
+        <RefreshTimer updatedAt={updatedAt} intervalMs={interval} loading={loading} onRefresh={reload} />
       </ViewHeader>
 
+      {data && data.totalPages > 1 ? (
+        <p className="-mt-3 self-end text-sm text-sand-600 tabular-nums dark:text-sand-400">
+          Página <span className="font-semibold text-ink dark:text-paper">{data.page}</span> de {data.totalPages}
+        </p>
+      ) : null}
       <StaleNotice error={data ? error : null} />
       {content}
     </div>

@@ -479,3 +479,269 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
   - Distancia mostrada en km en vez de metros.
 - **Alternativa descartada:** esperar a S6 para tocar la vista. Lo de esta DF no depende de campos nuevos.
 - **Dónde vive:** `src/components/DistanceTable.jsx`, `src/lib/transport.js`.
+
+---
+
+> DF-030 y DF-031 se escribieron el 2026-11-01, **antes** de implementar el rediseño, en su propio commit (RDOC01). No es una tarea del roadmap E2: es un fix propio de Esteban (`prompt/tarea-fix-rediseno-studylicc/`), sobre la rama de la PR #11.
+
+## DF-030 — Rediseño con la estética de StudyLicc, modo claro y oscuro (reemplaza la paleta de DF-008 y los íconos de DF-010)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: estética, logo, color de advertencia, alcance, papel blanco) + agente (adaptación al stack, contrastes)
+
+- **Contexto:**
+  - El rediseño V6 (DF-008) dejó un estilo oscuro de neón (degradados cian/rosa, sombras fuertes) sin modo claro.
+  - Esteban pidió la estética de su plataforma StudyLicc: tinta, acento verde, subrayador amarillo, fondos de cuaderno, bordes cálidos de 1 px, sin degradados ni sombras pesadas, con modo claro y oscuro.
+  - La guía de StudyLicc está pensada para Next.js. Aquí se adapta a Vite + React 19 + Tailwind 4.
+- **Decisiones humanas:**
+  - **Alcance: solo piel y shell.** Cambian los tokens, las fuentes, los íconos, el tema, el login, el header, el sidebar y el kit `ui/`. Las vistas mantienen su estructura y su lógica, y las grillas de StatTiles se quedan porque son datos, no tarjetas de presentación. Así hay menos conflictos con S12 a S14.
+  - **Papel blanco, no crema.** En un dashboard el crema de StudyLicc no se ve profesional. Cambios en el claro:
+    - `paper` pasa de `#faf7f0` a `#fafaf8`
+    - `card` pasa de `#fffdf8` a `#ffffff`
+    - `sand-100` pasa a `#f4f3ef` y `sand-200` a `#e7e5df`, para que tiles, hover y bordes no se vean amarillentos
+    - el renglón `--rule` pasa a `#edece8` y el punto `--dot` a `#e2e0d9`
+    - el resto de la paleta y el oscuro completo quedan como en StudyLicc
+  - **Logo nuevo:** isotipo SVG propio (una aleta sobre una línea de agua) relleno en `accent` con trazo en tinta, más el wordmark "EnergyShark" en Space Grotesk 700. No se usa la marca StudyLicc. `tiburon.png` deja de importarse.
+  - **Advertencia en `rose`:** lo que era naranja ("Duplicado", "Periodo de cierre") pasa a `rose`/`rose-ink`. `coral` queda solo para errores (NACK, rechazado, ruta deshabilitada, multa).
+- **Adaptaciones al stack (agente):**
+  - Fuentes: `@fontsource/space-grotesk` (700), `@fontsource/work-sans` (400/500/600) y `@fontsource/space-mono` (400/700) en vez de `next/font`. Van dentro del bundle y se sirven desde CloudFront, sin pedir nada a Google.
+  - Tema: store propio en `src/lib/theme.js` en vez de `next-themes`:
+    - guarda `light`, `dark` o `system` en `localStorage`, con try/catch;
+    - por defecto sigue al sistema;
+    - un script inline en `index.html` pone `.dark` en `<html>` antes del primer paint, para evitar el parpadeo;
+    - la variante `dark:` se registra por clase.
+  - Íconos: `@phosphor-icons/react`, peso `bold`. `Icon.jsx` conserva su API (`<Icon name="..." />`) y mapea cada nombre a un componente de Phosphor. Reemplaza los SVG dibujados a mano de DF-010; el pedido de StudyLicc trae la aprobación de la dependencia.
+  - Movimiento: solo CSS (keyframes `section-in`, `fade-in` y `pop-in`, y rotación del chevron), siempre con `motion-safe:` o `motion-reduce:`. Duraciones de 150 a 300 ms, easing `cubic-bezier(0.22,1,0.36,1)`. No se agrega la librería `motion`.
+- **Tokens (`src/index.css`):**
+  - Claro: `paper`, `ink`, `card`, `sand-100…900`, `accent` `#2bb699`, `accent-hover`, `accent-ink` `#16715d`, `marker` `#ffd23f`, `coral`/`coral-ink`, `rose`/`rose-ink` y `lavender`/`lavender-ink`.
+  - Oscuro (`.dark`): reasigna cada token por su rol, en azul tinta:
+    - `ink` es el fondo (`#141822`) y `paper` es el texto (`#e7eaf1`);
+    - `sand-900` es la superficie y `sand-800` la superficie elevada, el hover y el borde;
+    - `accent` sube a `#4fdcb5`;
+    - la elevación se marca por luminosidad, con `edge-light` en las tarjetas.
+  - Prohibidas las escalas frías de Tailwind (`zinc`, `slate`, `gray`, `neutral`, `stone`), `white/`, `black/`, `bg-linear-*` y la sombra `shadow-card`.
+- **Tonos de `Badge` (los usa `src/lib/status.js`):**
+
+| Tono | Claro | Oscuro | Antes | Uso |
+|---|---|---|---|---|
+| `active` | `accent/10` + `accent-ink` | `accent-soft` + `accent` | `cyan` | vigente, propuesto, aceptado, habilitado, mercado abierto |
+| `settled` | `accent` sólido + `ink` | igual | `success` | liquidado, reporte enviado |
+| `error` | `coral/10` + `coral-ink`, ícono | `coral/15` + `coral` | `pink` | NACK, rechazado, ruta deshabilitada, reporte no enviado |
+| `warning` | `rose/10` + `rose-ink`, ícono | `rose-soft` + `rose` | `orange` | duplicado, periodo de cierre |
+| `category` | `lavender/10` + `lavender-ink` | `lavender-soft` + `lavender` | `violet` | consumo |
+| `neutral` | `sand-100` + `sand-600` | `sand-800` + `sand-300` | `neutral` | enviado, expirado, cerrado, pendiente |
+
+- **Contraste (WCAG, script en la sesión):** todo el texto da al menos 4,5:1 y el foco al menos 3:1.
+  - Claro:
+    - `ink`: 16,62 sobre `paper` y 17,37 sobre `card`
+    - `sand-600`: 7,64 sobre `paper` y 6,34 sobre `sand-200`
+    - `accent-ink`: 5,65 sobre `paper` y 5,09 sobre `accent-soft`
+    - botón (`ink` sobre `accent`): 6,83
+    - chips al 10 % sobre `card` / sobre `sand-100`: `coral-ink` 5,17/4,68, `rose-ink` 5,01/4,54, `lavender-ink` 5,20/4,74, `accent-ink` 5,41/4,90
+  - Oscuro:
+    - `paper`: 14,73 sobre `ink` y 11,37 sobre `sand-800`
+    - `sand-400`: 5,95 sobre `sand-800`
+    - `accent`: 9,34 sobre `sand-900`
+    - botón: 10,34
+    - `coral` sobre su chip: 5,37
+    - `rose` sobre `rose-soft`: 7,29
+    - texto sobre el marker al 34 %: 5,42
+  - **Hallazgo:** `rose-ink` sobre `rose-soft` da 4,47:1 en claro. Por eso en claro los chips usan un tinte al 10 % del tono pleno (como hace StudyLicc) y los `*-soft` solo se usan en oscuro. Los chips no van sobre `sand-200`: el hover de las filas es `sand-100`.
+- **Alternativas descartadas:**
+  - Copiar `DESIGN.md`, `globals.css` y `Logo.tsx` de StudyLicc al repo: son de otra marca. La guía adaptada vive en `docs/design/sistema-visual.md`.
+  - Tiburón PNG recoloreado como isotipo: Esteban prefirió un SVG nuevo.
+  - Chip amarillo `marker` para advertencias: rompe la regla de que el marker es solo del subrayador y del logo.
+- **Dónde vive:** `src/index.css`, `src/main.jsx`, `index.html`, `src/lib/theme.js`, `src/components/ui/` (incluidos `Logo.jsx` y `ThemeSwitch.jsx`), `src/lib/status.js` (tonos), `public/favicon.svg` y las vistas (solo clases).
+
+## DF-031 — Datos nulos como "Sin dato" y rangos con "a" (reemplaza la fila "—" de DF-019)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana)
+
+- **Contexto:** la estética de DF-030 prohíbe el em-dash y el en-dash en los textos. DF-019 mostraba "—" en los campos nulos, y los rangos de la ventana del ciclo usaban "–".
+- **Decisión:**
+  - Los campos nulos (`fmt`, `fmtDate`, `fmtTime`, `orDash`, `truncId` y la etiqueta de un estado desconocido) muestran **"Sin dato"**. Se lee bien en voz alta con lector de pantalla y no se confunde con un signo negativo en columnas numéricas.
+  - Los rangos se escriben con "a": "Mercado 10:00:00 a 10:10:00".
+  - El resto de DF-019 (reporte pendiente, no enviado, sin status-statement) sigue igual.
+- **Alternativas descartadas:**
+  - Guion simple "-": en columnas numéricas parece un signo negativo.
+  - Mantener "—" como glifo de dato: contradice la regla del sistema visual.
+- **Dónde vive:** `src/lib/format.js` (con tests), `src/lib/status.js` y `src/components/CycleHistory.jsx`.
+
+## DF-032 — Segunda vuelta del rediseño: entrada de ciclos, sidebar fija y plegable, menú de cuenta y un solo ciclo abierto (reemplaza partes de DF-011, DF-020 y DF-030)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: todos los cambios de comportamiento) + agente (implementación y accesibilidad)
+
+- **Contexto:** Esteban revisó el primer rediseño (DF-030) y pidió una página más seria y minimalista, con un shell como el de los chats de LLM.
+- **Decisiones humanas:**
+  1. **Entrada de los ciclos:** al cargar, las tarjetas aparecen una tras otra, de arriba hacia abajo. Usan `rise-in` (fade in subiendo 8 px) con 70 ms de retraso entre una y otra. Con "Reducir movimiento" solo hay un fundido corto.
+  2. **El primer ciclo parte cerrado.** Ya no se abre solo, a diferencia de DF-020. Sigue destacado con el borde en acento.
+  3. **Fondo plano:** se quita el `dot-grid` del área principal, que reemplaza ese punto de DF-030. Las vistas van sobre `paper`/`ink` lisos.
+  4. **Sin "Sesión iniciada como" y el correo:** la cuenta se muestra con la foto y el nombre del usuario de Auth0 (`picture`, `name`). Si la foto falla, se muestran las iniciales.
+  5. **Sidebar fija y plegable:**
+     - queda fija a la altura de la pantalla y solo hace scroll el contenido;
+     - un botón la pliega a un riel de íconos, y la animación va hacia el lado al cerrar y al revés al abrir;
+     - el estado se recuerda en `localStorage`.
+  6. **Pie de la sidebar:** el switch "Modo oscuro" y el botón de cuenta (foto y nombre). Al apretar el botón se abre un menú con "Cerrar sesión", como en los chats de LLM. Se elimina el header superior y el logo pasa a la cabeza de la sidebar.
+  7. **Un solo ciclo abierto a la vez:**
+     - apretar cualquier parte de una tarjeta cerrada la abre y cierra la que estaba abierta;
+     - apretar fuera del ciclo abierto lo cierra;
+     - el detalle se sigue montando solo cuando está abierto (DF-024).
+  8. **Botón de detalle destacado:**
+     - va abajo a la derecha de la tarjeta, como botón primario ("Ver detalle");
+     - al abrir, baja al final del detalle y cambia a tinta ("Cerrar detalle").
+- **Decisiones del agente:**
+  - **Animar el ancho de la sidebar es una excepción documentada** a "solo transform/opacity" (como la de las carpetas en StudyLicc):
+    - mover solo el contenido con transform deja un hueco o lo tapa durante la animación;
+    - dura 250 ms con easing `cubic-bezier(0.22,1,0.36,1)`, y con "Reducir movimiento" el cambio es instantáneo;
+    - los textos se apagan con `opacity`.
+  - **En el celular (bajo `md`)** no hay riel. Una barra superior con el logo y un botón de menú abre la sidebar como cajón que entra con `translate-x` sobre un velo. Se cierra con el velo, con Escape o al elegir una sección. Reemplaza la fila horizontal de DF-011.
+  - **Sidebar fija con `sticky`** y no con un contenedor de scroll propio: el scroll sigue siendo el de la ventana, así funcionan el scroll al abrir un ciclo y la restauración del navegador.
+  - **Clic afuera:** se escucha `pointerdown` en el documento. No cuenta un clic en la barra de scroll (destino `<html>`).
+  - **Teclado:** la tarjeta completa se puede apretar solo con mouse o dedo. Para el teclado, el botón "Ver detalle" tiene `aria-expanded` y `aria-controls`, y abrir otro ciclo con el botón también cierra el anterior.
+  - **Scroll al abrir o cerrar:** al abrir o cerrar un ciclo, si su borde superior quedó fuera de la pantalla (porque se cerró uno más largo arriba), la página vuelve a su inicio.
+  - **Menú de cuenta:**
+    - `aria-haspopup="menu"` y `aria-expanded`;
+    - se cierra con Escape (vuelve el foco al botón) y al apretar afuera;
+    - aparece con `pop-in`.
+  - En el riel, cada ítem conserva su nombre accesible (el texto sigue en el DOM con opacidad 0) y lleva `title` como tooltip. "Probar /health" queda como ícono, con un punto de color y texto para lectores de pantalla.
+- **Alternativa descartada:** ocultar la sidebar del todo en vez de dejar un riel. Se pierde la navegación por íconos, que es el estándar que pidió Esteban.
+- **Dónde vive:**
+  - `src/App.jsx` y `src/components/Sidebar.jsx` (nuevo)
+  - `src/components/ui/UserMenu.jsx` (nuevo), `src/components/ui/Avatar.jsx` (nuevo), `src/components/ui/ThemeSwitch.jsx`
+  - `src/components/CycleHistory.jsx`, `src/index.css`
+  - se elimina `src/components/LogoutButton.jsx`
+
+## DF-033 — Intro del tiburón, grilla de tarjetas con diálogo, navegación entre ciclos y detalle por pestañas (reemplaza partes de DF-020, DF-024 y DF-032)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: los cuatro pedidos) + agente (diseño de cada sistema)
+
+- **Contexto:** Esteban pidió:
+  - una entrada divertida después de iniciar sesión;
+  - una navegación más fácil (72 ciclos al día y, hasta ahora, el paginador estaba al fondo y no volvía arriba);
+  - una grilla que distinga el ciclo actual de los demás, con tarjetas que se abran con animación;
+  - una lectura del detalle del ciclo más fácil.
+- **1. Intro del tiburón** (reemplaza "Cargando Auth0..."):
+  - **Secuencia completa:** la aleta del isotipo entra nadando sobre una ola que corre, con un vaivén leve, y aparece el wordmark. Cuando Auth0 termina, la aleta sale nadando hacia la derecha y la pantalla se funde hacia la vista.
+  - **Cuándo se ve:** completa una vez por pestaña (`sessionStorage`) o al volver del login de Auth0 (`code` en la URL). En las recargas siguientes, versión corta: solo un fundido mientras carga.
+  - **Movimiento:** solo `transform`, `opacity` y `clip-path`. Con "Reducir movimiento" no nada: solo aparece y se funde.
+  - **Lectores de pantalla:** `role="status"` con "Cargando EnergyShark".
+- **2. Navegación entre ciclos:**
+  - **Paginador arriba de la grilla:** primera, anterior, números con elipsis, siguiente y última; en el celular, anterior, "X de Y" y siguiente. Al cambiar de página la vista sube al título y el foco pasa al título (tabindex -1). Abajo queda un paginador compacto.
+  - **Buscar ciclo por ID** (`GET /api/cycles/{cycleId}`, que ya existe): abre el diálogo de ese ciclo aunque no esté en la página. Si no existe, el aviso aparece junto al campo.
+  - **"Volver al ciclo actual"** cuando no estás en la página 1.
+  - **Dentro del diálogo:** ciclo anterior y siguiente con botones y con ← y →. En el borde de la página carga la página vecina y sigue.
+- **3. Grilla de tarjetas:**
+  - **Página 1:** el ciclo más reciente es una tarjeta grande a la mitad del ancho (2 columnas × 2 filas desde `xl`), con:
+    - fase y una barra del avance mercado/cierre (con `scaleX`);
+    - una cuenta regresiva al próximo instante de la central;
+    - los contadores en grande y la última operación.
+    - Se llama "Ciclo actual" mientras no está cerrado y "Último ciclo" si ya cerró.
+  - **Los demás ciclos** son tarjetas chicas: cada tarjeta entera es un `<button>` con `aria-haspopup="dialog"`.
+  - **Páginas de 9 ciclos:** en la página 1 caben exactos (grande = 4 celdas + 8 chicas = 3 filas de 4); en las demás, 3 filas de 3.
+  - **Diálogo:** al abrir una tarjeta, el detalle se abre en un `<dialog>` modal que crece desde la tarjeta: transform y escala desde su rectángulo, con WAAPI. Al cerrar vuelve a la tarjeta. Se cierra con Escape, con el botón o apretando el velo.
+    - Mientras está abierto, la página no hace scroll.
+    - En el celular ocupa la pantalla.
+    - Con "Reducir movimiento" solo hay un fundido.
+  - **Reemplazos:** el diálogo reemplaza el detalle en línea de DF-032 (un solo ciclo abierto, apretar afuera para cerrar, botón que baja al final). El modal resuelve lo mismo por diseño. El detalle se sigue pidiendo solo al abrir (DF-024).
+  - **Mocks (DF-025):** generan 40 ciclos históricos más, para ver la grilla y la paginación.
+- **4. Detalle del ciclo por pestañas:**
+  - **Cabecera fija del diálogo:** id, fase, reporte, ventana, anterior/siguiente y cerrar.
+  - **Cifras clave siempre a la vista:** generación, consumo, vendible, costo, créditos y energía al cierre.
+  - **Última operación aplicada** con un botón "Ver" que abre su pestaña y marca la fila (DF-027).
+  - **Pestañas** (`role="tablist"`, flechas, Home y End), cada una con su contador:
+    - **Resumen:** línea de tiempo del mercado (abre, última oferta, último bid, cierre y válido hasta, con pasado o futuro), precios de recompra y desbalance, y financiamiento.
+    - **Mercado:** oferta, con una barra de lo que queda y la tabla de actualizaciones, y tablas de bids recibidos y enviados.
+    - **Swaps:** tabla con transporte y total de compras.
+    - **Cierre:** liquidación de desbalance (en cuenta frente a déficit), reporte y saldos.
+    - **E1:** solo si el ciclo trae datos de la E1 (DF-026).
+  - **Tablas legibles:** unidades en el encabezado, números alineados a la derecha con `tabular-nums`, `th scope`, caption para lectores de pantalla y scroll horizontal dentro de la tabla.
+- **Alternativas descartadas:**
+  - Llevar el detalle a una página aparte con su ruta: obliga a introducir el router en las vistas y se pierde la grilla de fondo.
+  - Hacer scroll infinito: dificulta llegar a un ciclo concreto, que es lo que pide la demo.
+- **Dónde vive:**
+  - `src/App.jsx`, `src/components/ui/SharkIntro.jsx`
+  - `src/components/CycleHistory.jsx` y `src/components/cycles/` (tarjetas, diálogo, paginador, búsqueda, detalle)
+  - `src/components/ui/Tabs.jsx`, `src/hooks/useNow.js`
+  - `src/lib/pagination.js` y `src/lib/cycles.js` (con tests)
+  - `src/mocks/cycles.js`, `src/index.css`
+
+## DF-034 — Nombre TiburonShark, aleta hacia la izquierda, sin estado de la API, un solo paginador y reloj de actualización (reemplaza partes de DF-011, DF-015 y DF-033)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: los seis pedidos) + agente (implementación)
+
+- **Decisiones humanas:**
+  1. **Nombre:** la app se llama **TiburonShark** en la interfaz (wordmark, intro, `<title>`). Los repos y el código siguen como están.
+  2. **Intro:** la aleta nada de derecha a izquierda, que es hacia donde apunta su borde de ataque, así se ve avanzando. La ola corre al revés, hacia la derecha.
+  3. **Sin "Estado de la API" en la sidebar.** Se quita la tarjeta de `/health` y su lógica de `App.jsx`. `getHealth` queda en el cliente.
+  4. **Un solo paginador, abajo y siempre visible:**
+     - va fijo (`sticky`) al pie de la vista, sobre el contenido;
+     - arriba solo queda, en la orilla, "Página X de Y";
+     - se elimina el paginador superior de DF-033;
+     - al cambiar de página la vista sigue subiendo al inicio.
+  5. **Sin textos de requisito ni de intervalo en los subtítulos** ("Más reciente primero (RF01)", "se actualiza cada 30 s"). En su lugar va un **reloj de actualización**:
+     - un círculo con un ícono de reloj al centro y un anillo que se descuenta hasta 0, cuando llega el poll siguiente;
+     - al pasar el mouse o con foco aparece "Actualizar", y apretarlo recarga y reinicia la cuenta;
+     - sin polling (páginas 2+ del historial), el anillo queda lleno y solo sirve para actualizar.
+     - **Precisión:** `useApiQuery` expone `updatedAt` (la hora del último dato bueno) y una recarga manual reinicia el intervalo del poll, así el anillo y el poll no se desfasan.
+     - **Movimiento:** el anillo avanza a saltos de 1 s con `stroke-dashoffset` (excepción ya documentada en StudyLicc para trazos SVG).
+  6. **El mismo paginador en "Registro de duplicados y NACKs":** `CyclePager` pasa a `ui/Pager.jsx`, genérico con su sustantivo ("ciclos", "mensajes"). Se retira `ui/Pagination.jsx`.
+- **Dónde vive:**
+  - `src/components/ui/Logo.jsx`, `SharkIntro.jsx`, `Pager.jsx` (nuevo), `RefreshTimer.jsx` (nuevo), `ViewHeader.jsx`
+  - `src/api/useApiQuery.js`, `src/index.css`, `index.html`, `src/App.jsx`
+  - `src/components/Sidebar.jsx`, `CycleHistory.jsx`, `DistanceTable.jsx`, `RejectedMessages.jsx`
+
+## DF-035 — Login con movimiento: agua del logo, borde que gira en el botón y mar de olas de fondo (reemplaza el fondo `grid-lines` del login de DF-030)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: los tres cambios y el fondo "Mar de olas") + agente (implementación)
+
+- **Contexto:** Esteban encontró el login "demasiado fome".
+- **Decisiones humanas:**
+  1. **Agua del logo en movimiento:** la ola bajo la aleta corre sin parar, hacia la derecha como en la intro (DF-034). La aleta queda quieta.
+  2. **Botón "Iniciar sesión" con borde animado:** deja de ser verde lleno. Es una tarjeta clara con un borde de 2 px por donde gira continuamente un tramo verde (`accent`).
+  3. **Fondo "Mar de olas"** (elegido entre cuatro opciones; se descartaron burbujas, corrientes diagonales y la cuadrícula que deriva):
+     - se quitan los cuadrados;
+     - seis líneas de ola, del mismo trazo que el logo y muy tenues, cruzan la pantalla a distintas velocidades: las de abajo más rápidas y marcadas, las de arriba más lentas y tenues.
+- **Decisiones del agente:**
+  - Todo se mueve solo con `transform`: la ola corre con `translateX` sobre un trazo del doble de ancho, y el tramo del borde es un cuadrado que gira con `rotate` detrás del botón.
+  - El tramo del borde es un `conic-gradient`: excepción documentada a "sin degradados", porque es la forma de dibujar un arco que gira, y vive solo en este botón.
+  - Con "Reducir movimiento" nada se mueve: el agua y el fondo quedan quietos y el borde del botón queda verde completo.
+  - Contraste: el texto del botón queda en tinta sobre `card` (17,37:1). El tramo verde es decorativo; el foco sigue siendo `focus-ring`.
+- **Dónde vive:** `src/components/ui/AuthScreen.jsx`, `src/components/ui/SeaBackground.jsx` (nuevo), `src/components/ui/Logo.jsx` (`WaterMark`), `src/components/LoginButton.jsx`, `src/App.jsx`, `src/index.css`.
+- **Corrección (misma fecha, al implementar):** ~~el tramo del borde es un cuadrado con `conic-gradient` que gira con `rotate`~~.
+  - En un botón ancho el tramo pasaba casi siempre por los bordes cortos, y por momentos no se veía (verificado con capturas pausando la animación en distintos instantes).
+  - Se reemplazó por un `rect` SVG con `pathLength=1` y `stroke-dasharray`, animado con `stroke-dashoffset` (la técnica del "dock trace" de StudyLicc, excepción ya documentada para trazos SVG). Recorre el perímetro a velocidad constante y siempre se ve.
+  - Ya no hay degradado.
+
+## DF-036 — Olas del login más orgánicas y un tiburón ocasional (amplía DF-035)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana: pedido, "probemos cómo sale") + agente (diseño)
+
+- **Contexto:** las olas de DF-035 eran la misma senoide repetida y se veían mecánicas. Esteban pidió que se sienta más el movimiento y que, muy sutilmente, a veces cruce un tiburón.
+- **Olas:**
+  - cada capa tiene su propio patrón de crestas irregulares (distinto alto y ancho), generado por `src/lib/waves.js` y repetido dos veces para que correr un 50 % no deje salto;
+  - cada capa suma un vaivén vertical lento (`sea-bob`, de 7 a 11 s) al avance horizontal, y una segunda línea más tenue que la acompaña como textura de oleaje;
+  - las capas de abajo son más altas, rápidas y marcadas.
+- **Tiburón ocasional:**
+  - la aleta del isotipo, chica y translúcida (opacidad 0,45), cruza la pantalla de derecha a izquierda (hacia donde apunta, DF-034) sobre la quinta ola (bajo la tarjeta, para que no quede tapado) y se mece con ella;
+  - el cruce dura unos 15 s dentro de un ciclo de 48 s; el resto del tiempo no está;
+  - aparece y se va con un fundido;
+  - es decorativo (`aria-hidden`) y con "Reducir movimiento" no aparece.
+- **Movimiento:** solo `transform` y `opacity`.
+- **Dónde vive:** `src/lib/waves.js` (con tests), `src/components/ui/SeaBackground.jsx`, `src/index.css`.
+
+## DF-037 — El tiburón pasa a ser un easter egg de la aleta del logo; el botón de login sin borde animado (reemplaza partes de DF-035 y DF-036)
+
+**Fecha:** 2026-11-01 · **Unidad:** fix propio (fuera de S) · **Decidió:** Esteban (humana) + agente (implementación)
+
+- **Decisiones humanas:**
+  1. **Tiburón como easter egg:** ya no cruza solo cada 48 s (DF-036). Aparece solo cuando aprietas la aleta del logo del login:
+     - la aleta se sumerge y desaparece del logo;
+     - el tiburón cruza la página nadando de derecha a izquierda;
+     - al terminar, la aleta vuelve a asomar en el logo.
+     El tiburón va en un tono parecido al fondo (`sand-300` en claro, `sand-700` en oscuro) para no destacar.
+  2. **Botón "Iniciar sesión" sin borde animado:** se quita el trazo que recorría el borde (DF-035). Queda claro, con un borde verde quieto de 2 px.
+- **Decisiones del agente:**
+  - La aleta es un `<button>` con nombre accesible ("Hacer nadar al tiburón") y 44 px de área. Mientras el tiburón nada no se puede volver a apretar.
+  - El estado se comparte con un contexto (`src/hooks/sharkSwim.js`) entre el logo y el fondo.
+  - Con "Reducir movimiento" no hay nado: el tiburón aparece y se va con un fundido, quieto.
+  - La olas de DF-036 no cambian.
+- **Dónde vive:** `src/hooks/sharkSwim.js` (nuevo), `src/components/ui/Logo.jsx` (`WaterMark`), `src/components/ui/SeaBackground.jsx`, `src/components/ui/AuthScreen.jsx`, `src/components/LoginButton.jsx`, `src/index.css`.

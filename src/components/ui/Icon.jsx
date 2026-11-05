@@ -1,6 +1,6 @@
 import {
-  ArrowClockwise, ArrowsOut, Clock, BatteryHigh, CaretDown, CaretUp, CaretLeft, CaretRight, CaretUpDown, CheckCircle, MagnifyingGlass, CaretDoubleLeft, CaretDoubleRight, ClockCounterClockwise, Copy, Lightning, Moon, Plug, Pulse, ShareNetwork, SignOut,
-  SidebarSimple, List, Storefront, X, Sun, Wallet, Warning, WarningCircle,
+  ArrowClockwise, ArrowsLeftRight, ArrowsOut, ChartBar, Clock, BatteryHigh, CaretDown, CaretUp, CaretLeft, CaretRight, CaretUpDown, CheckCircle, MagnifyingGlass, CaretDoubleLeft, CaretDoubleRight, ClockCounterClockwise, Copy, Lightning, Moon, Plug, Pulse, ShareNetwork, SignOut,
+  SidebarSimple, List, SlidersHorizontal, Storefront, X, Sun, Wallet, Warning, WarningCircle,
 } from '@phosphor-icons/react'
 
 // Íconos de Phosphor, peso bold (DF-030; reemplaza los SVG a mano de DF-010). Siempre decorativos: aria-hidden.
@@ -8,6 +8,9 @@ const icons = {
   history: ClockCounterClockwise,
   network: ShareNetwork,
   market: Storefront,
+  strategy: SlidersHorizontal,
+  chart: ChartBar,
+  swap: ArrowsLeftRight,
   alert: WarningCircle,
   warning: Warning,
   duplicate: Copy,

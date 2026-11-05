@@ -4,6 +4,8 @@ import { LoginButton } from './components/LoginButton'
 import { CycleHistory } from './components/CycleHistory'
 import { DistanceTable } from './components/DistanceTable'
 import { MarketBook } from './components/MarketBook'
+import { SpanExperiment } from './components/SpanExperiment'
+import { StrategyAdmin } from './components/StrategyAdmin'
 import { RejectedMessages } from './components/RejectedMessages'
 import { Sidebar } from './components/Sidebar'
 import { AuthScreen } from './components/ui/AuthScreen'
@@ -99,6 +101,8 @@ function App() {
           {/* Renderizado condicional de las vistas */}
           {activeView === 'history' && <CycleHistory />}
           {activeView === 'market' && <MarketBook />}
+          {activeView === 'strategy' && <StrategyAdmin />}
+          {activeView === 'experiment' && <SpanExperiment />}
           {activeView === 'distance' && <DistanceTable />}
           {activeView === 'rejected' && <RejectedMessages />}
         </div>

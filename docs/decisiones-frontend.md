@@ -393,3 +393,56 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 - **Alternativa descartada:** refresh tokens con caché en memoria. Renuevan el token mientras la pestaña vive, pero se pierden igual al recargar, que era el problema.
 - **Requiere en Auth0 (Jorge):** *Allow Offline Access* en la API y *Refresh Token Rotation* en la app SPA. Sin eso, Auth0 no emite el refresh token: verificado, el *scope* trae `offline_access` pero no viene `refresh_token`. Opcional: *Allow Skipping User Consent*, para que en `app.tiburonshark.me` no aparezca la pantalla de consentimiento. En `localhost` aparece siempre la primera vez.
 - **Dónde vive:** `src/auth/auth0-provider-with-navigate.jsx`, `src/api/client.js`.
+
+---
+
+> **E2.** Desde aquí, decisiones de la Entrega 2 (protocolo v3: wallet, mercado entre ciudades, ciclo de 20 min).
+> Roadmap: `docs/E2 Road Map.md` del backend, sesión S11.
+
+## DF-024 — RF01 en la E2: resumen en el listado y detalle al expandir (reemplaza parte de DF-020)
+
+**Fecha:** 2026-11-01 · **Unidad:** S11 (RF01) · **Decidió:** Esteban (humana) + agente (forma de los datos)
+
+- **Contexto:**
+  - RF01 en la E2 pide por ciclo: `cycleId`, `status-statement`, financiamiento, oferta y sus actualizaciones, bids enviados y recibidos con su resultado, swaps con estado final, transporte, `imbalance-settlement` y `negotiation-report`, con la última operación aplicada identificada.
+  - Con 72 ciclos al día y compradores que pueden inundar de bids, un ciclo puede traer decenas de filas. En la E1 el listado traía cada ciclo completo y DF-020 descartó pedir el detalle al expandir.
+  - El endpoint de detalle (`GET /api/cycles/{cycleId}` extendido) es de Esteban (roadmap E2, S11), así que la forma la fija el front.
+- **Decisión humana:** "Resumen + detalle al expandir (Recommended)".
+  - `GET /api/cycles` trae solo la cabecera de cada ciclo: `cycleId`, `phase`, `market` (instantes), `validUntil`, `lastOperationApplied`, `negotiationReportSent`, `finalBalances` y `counts` (`bidsReceived`, `bidsSent`, `swapsSettled`).
+  - `GET /api/cycles/{cycleId}` trae el detalle al abrir la tarjeta: `statusStatement` (con `energy.sellable` y el bloque `market`), `funding` (`quantity`, `penalty`, `balanceAfter`, `creditLine`), `offer` con `updates[]`, `bidsReceived[]`, `bidsSent[]`, `swaps[]` (con `transport`), `imbalanceSettlement`, `negotiationReportSent` y `finalBalances`.
+  - Solo la tarjeta abierta del ciclo en curso hace polling (30 s, DF-015); las cerradas no piden nada.
+  - La forma completa queda en `src/mocks/cycles.js` hasta que se escriba en el `openapi.yaml` del repo de contratos.
+- **Se mantiene de DF-020:** la primera tarjeta abierta y la última operación siempre visible en la cabecera.
+- **Alternativa descartada:** extender `CycleSummary` con todo lo v3 en el listado. Menos cambios, pero respuestas grandes cada 30 s.
+- **Dónde vive:** `src/components/CycleHistory.jsx`, `src/api/endpoints.js`.
+
+## DF-025 — Mocks detrás de `VITE_USE_MOCKS`, solo en desarrollo
+
+**Fecha:** 2026-11-01 · **Unidad:** S11 · **Decidió:** Esteban (humana) + agente
+
+- **Contexto:** el backend de la E2 (S3, S5, S6, S7) todavía no existe y el roadmap pide armar las vistas con mocks. Los mocks de la E1 se borraron en `e061c1a`.
+- **Decisión humana:** "Flag VITE_USE_MOCKS (Recommended)".
+  - Con `VITE_USE_MOCKS=true` **y** `npm run dev`, `listCycles` y `getCycle` responden desde `src/mocks/cycles.js`, con una latencia simulada. El resto de los endpoints sigue yendo a la API.
+  - En `npm run build` el flag no tiene efecto: la condición incluye `import.meta.env.DEV`, y el `import()` dinámico de los mocks queda fuera del bundle de producción.
+  - Los instantes de los mocks se calculan desde la hora actual, para ver las fases del ciclo en vivo.
+  - Se borran en S23 (integración con la API real).
+- **Alternativa descartada:** fixtures solo en tests. No deja ver la vista mientras el backend no existe.
+- **Dónde vive:** `src/api/endpoints.js`, `src/mocks/cycles.js`, `.env.example`.
+
+## DF-026 — Ciclos de la E1 en el historial
+
+**Fecha:** 2026-11-01 · **Unidad:** S11 · **Decidió:** Esteban (humana)
+
+- **Contexto:** la base tiene ciclos de la E1 con `transfersReceived`, `demandStatementsApplied` y `voluntaryNegotiations`, flujos que la v3 retiró.
+- **Decisión humana:** "Mostrar solo si traen datos (Recommended)". Las secciones v3 son las principales; las de la E1 aparecen bajo "Protocolo E1" solo en los ciclos que las tengan. Su marcado de la última operación sigue con la heurística de DF-020.
+- **Alternativa descartada:** eliminarlas. Los ciclos antiguos se verían vacíos.
+- **Dónde vive:** `src/components/CycleHistory.jsx`, `src/lib/cycles.js` (`hasLegacyData`).
+
+## DF-027 — Fase del ciclo v3 y última operación por referencia exacta
+
+**Fecha:** 2026-11-01 · **Unidad:** S11 · **Decidió:** agente (implementación), dentro de DF-024
+
+- **Fase:** se deriva de los instantes del `status-statement` (`market.opensAt`, `closesAt`, `reportOpensAt` y `validUntil`), porque la central es la única autoridad de tiempo y el enunciado prohíbe derivarlos del reloj propio. El reloj del navegador solo se usa para comparar contra esos instantes, igual que en DF-021. Fases: "Mercado abierto", "Periodo de cierre" y "Cerrado". Sin bloque `market` (ciclos E1) se usa `phase` del backend como antes.
+- **Reporte pendiente:** en un ciclo v3, mientras no pase `validUntil`; en uno E1, la regla de DF-019.
+- **Última operación:** como el endpoint es propio, `lastOperationApplied` trae `ref` (`swapId` o `msgId`) además de `type` y `appliedAt`. El ítem se marca por igualdad exacta de esa referencia, sin heurística de tiempos. Tipos v3: `transfer` (financiamiento), `swap-settled`, `trade-recorded` (transporte), `imbalance-settlement` y `reconciliation`. Si no viene `ref`, se cae a la heurística de DF-020.
+- **Dónde vive:** `src/lib/cycles.js` (`marketPhase`, `reportPending`, `matchLastOperation`), con tests.

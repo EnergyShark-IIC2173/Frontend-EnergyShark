@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { estimateNextWindow, findOpenCycle, findOpenCycleWithoutStatus, matchLastOperation, reportPending } from './cycles.js'
+import { buyerTotals, estimateNextWindow, findOpenCycle, findOpenCycleWithoutStatus, hasLegacyData, marketPhase, matchLastOperation, reportPending } from './cycles.js'
 
 const ss = { energy: { consumption: 1, generationCost: 1, generationCapacity: 2 } }
 const now = Date.parse('2026-10-06T17:50:00Z')
@@ -70,4 +70,66 @@ test('reportPending solo mientras la ventana sigue abierta', () => {
   assert.equal(reportPending({ phase: 'negotiating', windowClosesAt: '2026-10-06T18:00:00Z' }, now), true)
   assert.equal(reportPending({ phase: 'consuming', windowClosesAt: '2026-10-06T18:00:00Z' }, now), false)
   assert.equal(reportPending({ phase: 'negotiating', windowClosesAt: null }, now), false)
+})
+
+// --- E2 (DF-026, DF-027) ---
+
+const v3 = {
+  market: {
+    opensAt: '2026-11-01T14:05:00Z',
+    closesAt: '2026-11-01T14:15:00Z',
+    reportOpensAt: '2026-11-01T14:15:00Z',
+  },
+  validUntil: '2026-11-01T14:20:00Z',
+}
+
+test('marketPhase sigue los instantes del status-statement', () => {
+  assert.equal(marketPhase(v3, Date.parse('2026-11-01T14:04:59Z')), 'pending')
+  assert.equal(marketPhase(v3, Date.parse('2026-11-01T14:05:00Z')), 'market')
+  assert.equal(marketPhase(v3, Date.parse('2026-11-01T14:14:59Z')), 'market')
+  assert.equal(marketPhase(v3, Date.parse('2026-11-01T14:15:00Z')), 'closing')
+  assert.equal(marketPhase(v3, Date.parse('2026-11-01T14:20:00Z')), 'closed')
+  assert.equal(marketPhase({ phase: 'closed' }, now), null)
+})
+
+test('reportPending en v3 dura hasta validUntil; en E1 sigue la regla de DF-019', () => {
+  assert.equal(reportPending(v3, Date.parse('2026-11-01T14:19:59Z')), true)
+  assert.equal(reportPending(v3, Date.parse('2026-11-01T14:20:00Z')), false)
+  assert.equal(reportPending({ phase: 'negotiating', windowClosesAt: '2026-10-06T18:00:00Z' }, now), true)
+})
+
+test('matchLastOperation v3 marca por referencia exacta', () => {
+  const cycle = {
+    funding: { msgId: 'm-1' },
+    imbalanceSettlement: { settlementId: 's-1' },
+    swaps: [{ swapId: 'swp-77' }, { swapId: 'swp-81' }],
+  }
+  const at = (type, ref) => matchLastOperation({ ...cycle, lastOperationApplied: { type, appliedAt: '2026-11-01T14:06:00Z', ref } })
+  assert.deepEqual(at('swap-settled', { swapId: 'swp-81' }), { section: 'swaps', id: 'swp-81' })
+  assert.deepEqual(at('trade-recorded', { swapId: 'swp-77' }), { section: 'swaps', id: 'swp-77' })
+  assert.deepEqual(at('transfer', { msgId: 'm-1' }), { section: 'funding' })
+  assert.deepEqual(at('imbalance-settlement', { msgId: 's-1' }), { section: 'imbalance' })
+  // Referencia que no está en el detalle: no se marca nada (la cabecera igual la muestra).
+  assert.equal(at('swap-settled', { swapId: 'swp-99' }), null)
+  assert.equal(at('transfer', { msgId: 'otro' }), null)
+})
+
+test('hasLegacyData solo con flujos E1 no vacíos', () => {
+  assert.equal(hasLegacyData({ transfersReceived: [], demandStatementsApplied: [], voluntaryNegotiations: [] }), false)
+  assert.equal(hasLegacyData({ demandStatementsApplied: [{}] }), true)
+  assert.equal(hasLegacyData(null), false)
+})
+
+test('buyerTotals suma solo compras liquidadas', () => {
+  const cycle = {
+    swaps: [
+      { role: 'buyer', status: 'settled', quantity: 7300, amount: 2409000, transport: { total: 536112 } },
+      { role: 'buyer', status: 'settled', quantity: 3000, amount: 1230000, transport: { total: 361500 } },
+      { role: 'buyer', status: 'expired', quantity: 1700, amount: 510000, transport: null },
+      { role: 'seller', status: 'settled', quantity: 500, amount: 165000, transport: null },
+    ],
+  }
+  // 7300 + 3000 = 10300 kWh; 2409000 + 1230000 = 3639000; 536112 + 361500 = 897612
+  assert.deepEqual(buyerTotals(cycle), { kwh: 10300, energy: 3639000, transport: 897612 })
+  assert.deepEqual(buyerTotals({}), { kwh: 0, energy: 0, transport: 0 })
 })

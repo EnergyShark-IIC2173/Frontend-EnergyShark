@@ -8,6 +8,7 @@ import { divider, labelBase, navItemActive, navItemInactive, textSecondary } fro
 
 const NAV_ITEMS = [
   { id: 'history', icon: 'history', label: 'Historial de Ciclos' },
+  { id: 'market', icon: 'market', label: 'Mercado' },
   { id: 'distance', icon: 'network', label: 'Conectividad' },
   { id: 'rejected', icon: 'alert', label: 'Errores/NACKs' },
 ]

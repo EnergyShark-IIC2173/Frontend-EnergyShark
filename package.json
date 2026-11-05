@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mocks": "vite --mode mocks",
     "build": "vite build",
     "lint": "eslint .",
     "test": "node --test \"src/lib/*.test.js\"",

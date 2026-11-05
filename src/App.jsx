@@ -3,6 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { LoginButton } from './components/LoginButton'
 import { CycleHistory } from './components/CycleHistory'
 import { DistanceTable } from './components/DistanceTable'
+import { MarketBook } from './components/MarketBook'
 import { RejectedMessages } from './components/RejectedMessages'
 import { Sidebar } from './components/Sidebar'
 import { AuthScreen } from './components/ui/AuthScreen'
@@ -97,6 +98,7 @@ function App() {
         <div className="mx-auto w-full max-w-6xl">
           {/* Renderizado condicional de las vistas */}
           {activeView === 'history' && <CycleHistory />}
+          {activeView === 'market' && <MarketBook />}
           {activeView === 'distance' && <DistanceTable />}
           {activeView === 'rejected' && <RejectedMessages />}
         </div>

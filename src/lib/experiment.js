@@ -21,9 +21,21 @@ function derive(m) {
 
 export const cycleRow = derive
 
-// Agregado por span, ordenado por span ascendente, con bids rechazados por ciclo.
+// La versión más alta presente en el agregado (la del experimento vigente). null si no viene
+// (fixtures de test sin configVersion, o backend viejo): en ese caso no se filtra nada.
+function latestConfigVersion(aggregates) {
+  const versions = (aggregates ?? []).map((a) => Number(a.configVersion)).filter(Number.isFinite)
+  return versions.length ? Math.max(...versions) : null
+}
+
+// Agregado por span, ordenado por span ascendente, con bids rechazados por ciclo. Se queda solo con
+// la versión de estrategia vigente: un span de 20s bajo la config por defecto (sin span_plan) y un
+// span de 20s bajo el span_plan del experimento no son comparables, aunque /api/metrics/spans los
+// traiga por separado (GROUP BY span_seconds, config_version en el backend).
 export function spanRows(aggregates) {
+  const latest = latestConfigVersion(aggregates)
   return (aggregates ?? [])
+    .filter((a) => latest === null || Number(a.configVersion) === latest)
     .map((a) => ({ ...derive(a), bidsRejectedPerCycle: ratio(a.bidsRejected, a.cycles) }))
     .sort((a, b) => Number(a.spanSeconds) - Number(b.spanSeconds))
 }

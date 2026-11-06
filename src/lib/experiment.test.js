@@ -49,3 +49,16 @@ test('totals suma y recalcula las razones (no promedia promedios)', () => {
   assert.equal(t.savings, 39.7e6)
   assert.equal(Math.round(t.savingsRatio * 1000) / 1000, Math.round((39.7 / 190.7) * 1000) / 1000)
 })
+
+test('spanRows nunca mezcla dos config_version bajo el mismo span (bug real de /api/metrics/spans)', () => {
+  const mixed = [
+    { spanSeconds: 20, configVersion: 1, cycles: 40, deficitKwh: 0, coveredKwh: 0, effectiveCost: 0, baselineCost: 0, bidsRejected: 0 },
+    { spanSeconds: 10, configVersion: 2, cycles: 5, deficitKwh: 40000, coveredKwh: 30000, effectiveCost: 20e6, baselineCost: 29.4e6, bidsRejected: 2 },
+    { spanSeconds: 20, configVersion: 2, cycles: 4, deficitKwh: 36000, coveredKwh: 20000, effectiveCost: 22e6, baselineCost: 26.46e6, bidsRejected: 3 },
+  ]
+  const rows = spanRows(mixed)
+  // Solo quedan las filas de la versión 2 (la más alta): la de span=20/versión 1 (surplus, config por
+  // defecto) se descarta aunque exista en la respuesta cruda.
+  assert.deepEqual(rows.map((r) => r.spanSeconds), [10, 20])
+  assert.ok(rows.every((r) => r.configVersion === 2))
+})

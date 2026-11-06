@@ -162,7 +162,15 @@ export function SpanExperiment() {
               <CycleTable rows={cycles.data.data.map(cycleRow)} />
               <Pager label="Paginación de ciclos medidos" noun="ciclos" page={cycles.data.page} totalPages={cycles.data.totalPages} total={cycles.data.total} onChange={setPage} disabled={cycles.loading} />
             </>
-          ) : cycles.error ? <ErrorState error={cycles.error} onRetry={cycles.reload} onRelogin={cycles.relogin} /> : <LoadingState label="Cargando los ciclos…" />}
+          ) : cycles.error ? (
+            <ErrorState error={cycles.error} onRetry={cycles.reload} onRelogin={cycles.relogin} />
+          ) : cycles.loading ? (
+            <LoadingState label="Cargando los ciclos…" />
+          ) : (
+            <EmptyState icon="chart" title="Sin ciclos medidos en esta página">
+              Todavía no cerró ningún ciclo con estas métricas.
+            </EmptyState>
+          )}
         </section>
       </>
     )

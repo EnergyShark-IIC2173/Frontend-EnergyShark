@@ -14,24 +14,21 @@ export function routeTransport(row, disabledRouteTransportCost) {
   return { enabled: false, punitive: true, perKwh }
 }
 
-// Una fila por oferta, con transporte y precio efectivo. status:
-//  - 'own': la oferta propia (comprarse es SELF_TRADE), sin precio efectivo;
-//  - 'no-route': el vendedor no está en la tabla;
+// Una fila por oferta del libro real (GET /api/market/book, S6). master ya calcula transportPerEnergy,
+// effectivePrice y routeEnabled con la distance-table vigente (ADR-002, addendum S6): el front no los
+// recalcula, así el número es el mismo que usa el comprador (S8). status:
+//  - 'own': la oferta propia (comprarse es SELF_TRADE), sin precio efectivo; ownCity sale de la distance-table;
+//  - 'no-route': el vendedor no está en la tabla (routeEnabled null);
 //  - 'disabled' | 'enabled': según la ruta.
-export function bookRows(book, table) {
-  const own = table?.cityId ?? null
-  const distances = table?.distances ?? {}
-  const disabledCost = table?.disabledRouteTransportCost
+export function bookRows(book, ownCity = null) {
   return (book?.offers ?? []).map((offer) => {
     const base = { ...offer, transport: null, effectivePrice: null }
-    if (own && offer.cityId === own) return { ...base, status: 'own' }
-    const row = distances[offer.cityId]
-    if (!row) return { ...base, status: 'no-route' }
-    const transport = routeTransport(row, disabledCost)
-    const effectivePrice = transport.perKwh != null && finite(offer.pricePerEnergy)
-      ? round2(Number(offer.pricePerEnergy) + transport.perKwh)
-      : null
-    return { ...base, status: transport.enabled ? 'enabled' : 'disabled', transport, effectivePrice }
+    if (ownCity && offer.cityId === ownCity) return { ...base, status: 'own' }
+    if (offer.routeEnabled == null) return { ...base, status: 'no-route' }
+    const enabled = offer.routeEnabled !== false
+    const transport = { enabled, punitive: !enabled, perKwh: finite(offer.transportPerEnergy) ? Number(offer.transportPerEnergy) : null }
+    const effectivePrice = finite(offer.effectivePrice) ? Number(offer.effectivePrice) : null
+    return { ...base, status: enabled ? 'enabled' : 'disabled', transport, effectivePrice }
   })
 }
 

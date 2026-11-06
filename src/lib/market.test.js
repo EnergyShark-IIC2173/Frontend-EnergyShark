@@ -12,7 +12,6 @@ const table = {
     COR: { distance: 5000000, transportCost: 0.01, enabled: true },
   },
 }
-const offer = (cityId, pricePerEnergy, remaining, quantity = remaining) => ({ offerId: `${cityId}-1`, cityId, pricePerEnergy, quantity, remaining })
 
 test('routeTransport: ruta habilitada usa transportCost; deshabilitada, la tarifa punitiva', () => {
   assert.deepEqual(routeTransport(table.distances.HGW, 0.0089), { enabled: true, punitive: false, perKwh: 73.44 })
@@ -23,13 +22,30 @@ test('routeTransport: ruta habilitada usa transportCost; deshabilitada, la tarif
   assert.deepEqual(routeTransport(undefined, 0.0089), { enabled: null, punitive: false, perKwh: null })
 })
 
-test('bookRows: precio efectivo = precio + transporte por kWh, con las filas especiales', () => {
-  const book = { offers: [offer('HGW', 330, 12700), offer('MET', 290, 3000), offer('TEST', 300, 5000), offer('ZZZ', 100, 10)] }
-  const rows = Object.fromEntries(bookRows(book, table).map((r) => [r.cityId, r]))
+// Filas como las arma master en GET /api/market/book (transporte y precio efectivo ya calculados).
+const offer = (cityId, pricePerEnergy, remaining, route = {}) => ({
+  offerId: `${cityId}-1`, cityId, pricePerEnergy, quantity: remaining, remaining,
+  transportPerEnergy: null, effectivePrice: null, routeEnabled: null, ...route,
+})
+const enabled = (transportPerEnergy, price) => ({ transportPerEnergy, effectivePrice: Math.round((price + transportPerEnergy) * 100) / 100, routeEnabled: true })
+const disabled = (transportPerEnergy, price) => ({ ...enabled(transportPerEnergy, price), routeEnabled: false })
+
+test('bookRows: usa el transporte y el precio efectivo de master, con las filas especiales', () => {
+  const book = {
+    offers: [
+      offer('HGW', 330, 12700, enabled(73.44, 330)),
+      offer('MET', 290, 3000, disabled(120.51, 290)),
+      offer('TEST', 300, 5000),
+      offer('ZZZ', 100, 10),
+    ],
+  }
+  const rows = Object.fromEntries(bookRows(book, 'TEST').map((r) => [r.cityId, r]))
 
   assert.equal(rows.HGW.status, 'enabled')
+  assert.deepEqual(rows.HGW.transport, { enabled: true, punitive: false, perKwh: 73.44 })
   assert.equal(rows.HGW.effectivePrice, 403.44)
   assert.equal(rows.MET.status, 'disabled')
+  assert.equal(rows.MET.transport.punitive, true)
   assert.equal(rows.MET.effectivePrice, 410.51)
   assert.equal(rows.TEST.status, 'own')
   assert.equal(rows.TEST.effectivePrice, null)
@@ -37,22 +53,30 @@ test('bookRows: precio efectivo = precio + transporte por kWh, con las filas esp
   assert.equal(rows.ZZZ.effectivePrice, null)
 })
 
-test('bookRows: sin tabla o sin libro no inventa nada', () => {
-  assert.deepEqual(bookRows(null, table), [])
-  const [row] = bookRows({ offers: [offer('HGW', 330, 1)] }, null)
+test('bookRows: sin libro no inventa nada; sin ciudad propia conocida, la propia queda sin ruta', () => {
+  assert.deepEqual(bookRows(null, 'TEST'), [])
+  const [row] = bookRows({ offers: [offer('TEST', 330, 1)] })
   assert.equal(row.status, 'no-route')
 })
 
+test('bookRows: ruta caída sin cifra de transporte deja el precio efectivo vacío', () => {
+  const [row] = bookRows({ offers: [offer('MET', 290, 3000, { routeEnabled: false })] }, 'TEST')
+  assert.equal(row.status, 'disabled')
+  assert.equal(row.transport.perKwh, null)
+  assert.equal(row.effectivePrice, null)
+})
+
 test('sortRows: por precio efectivo ascendente, sin valor al final; también por remaining descendente', () => {
-  const rows = bookRows({ offers: [offer('MET', 290, 3000), offer('TEST', 300, 5000), offer('HGW', 330, 12700), offer('COR', 380, 800)] }, table)
-  // COR: 5 000 km × 0.01 = 50 → 430
+  const rows = bookRows({
+    offers: [offer('MET', 290, 3000, disabled(120.51, 290)), offer('TEST', 300, 5000), offer('HGW', 330, 12700, enabled(73.44, 330)), offer('COR', 380, 800, enabled(50, 380))],
+  }, 'TEST')
   assert.deepEqual(sortRows(rows).map((r) => r.cityId), ['HGW', 'MET', 'COR', 'TEST'])
   assert.deepEqual(sortRows(rows, 'remaining', 'desc').map((r) => r.cityId), ['HGW', 'TEST', 'MET', 'COR'])
   assert.deepEqual(sortRows(rows, 'pricePerEnergy').map((r) => r.cityId), ['MET', 'TEST', 'HGW', 'COR'])
 })
 
 test('bestOffer: la comprable más barata con remaining; null si no hay', () => {
-  const rows = bookRows({ offers: [offer('HGW', 330, 0), offer('MET', 290, 3000), offer('TEST', 1, 5000)] }, table)
+  const rows = bookRows({ offers: [offer('HGW', 330, 0, enabled(73.44, 330)), offer('MET', 290, 3000, disabled(120.51, 290)), offer('TEST', 1, 5000)] }, 'TEST')
   assert.equal(bestOffer(rows).cityId, 'MET')
   assert.equal(bestOffer([]), null)
 })

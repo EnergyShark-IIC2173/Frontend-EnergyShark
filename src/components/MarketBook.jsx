@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { getDistanceTable, getMarketOffers } from '../api/endpoints'
+import { getDistanceTable, getMarketBook } from '../api/endpoints'
 import { useApiQuery } from '../api/useApiQuery'
-import { useNow } from '../hooks/useNow'
-import { fmt, fmtCountdown, fmtTime } from '../lib/format'
+import { fmt, fmtTime } from '../lib/format'
 import { bestOffer, bookRows, sortRows } from '../lib/market'
 import { Badge } from './ui/Badge'
 import { Icon } from './ui/Icon'
@@ -13,8 +12,9 @@ import { TableCard } from './ui/TableCard'
 import { Marker, ViewHeader } from './ui/ViewHeader'
 import { td, textSecondary, th, tr } from './ui/classes'
 
-// RF02 (DF-038): libro de ofertas de market.{CODE} con transporte y precio efectivo según la distance-table
-// vigente. Libro cada 5 s y tabla cada 10 s: un offer-updated o una ruta caída se ven en segundos (anomalía 6).
+// RF02 (DF-038, DF-045): libro de ofertas de market.{CODE}. master calcula el transporte y el precio efectivo con
+// la distance-table vigente; la tabla solo da la ciudad propia y su hora. Libro cada 5 s y tabla cada 10 s: un
+// offer-updated o una ruta caída se ven en segundos (anomalía 6). El reloj del mercado vive en la sidebar (DF-044).
 const BOOK_POLL_MS = 5_000
 const TABLE_POLL_MS = 10_000
 
@@ -61,21 +61,18 @@ function SortHeader({ column, sort, onSort }) {
 }
 
 export function MarketBook() {
-  const book = useApiQuery(getMarketOffers, null, { pollMs: BOOK_POLL_MS })
+  const book = useApiQuery(getMarketBook, null, { pollMs: BOOK_POLL_MS })
   const table = useApiQuery(getDistanceTable, null, { pollMs: TABLE_POLL_MS })
   const [sort, setSort] = useState({ key: 'effectivePrice', dir: 'asc' })
-  const open = book.data && !book.data.marketClosed
-  const now = useNow(1000, Boolean(open))
 
   function onSort(key) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'remaining' ? 'desc' : 'asc' }))
   }
 
-  const rows = sortRows(bookRows(book.data, table.data), sort.key, sort.dir)
+  const rows = sortRows(bookRows(book.data, table.data?.cityId), sort.key, sort.dir)
   const best = bestOffer(rows)
   const disabledSellers = rows.filter((r) => r.status === 'disabled').map((r) => r.cityId)
-  const countdown = open ? fmtCountdown(book.data.closesAt, now) : null
-  // 404: S6 aún no desplegado. No es un error rojo (como DF-016 en Conectividad).
+  // 404: el EC2 corre una versión sin S6. No es un error rojo (como DF-016 en Conectividad).
   const notDeployed = book.error?.status === 404
 
   let content
@@ -83,20 +80,15 @@ export function MarketBook() {
   else if (notDeployed) {
     content = (
       <EmptyState icon="market" title="Libro de ofertas aún no disponible">
-        El backend respondió 404 en <code className="font-mono">/api/market/offers</code>.
+        El backend respondió 404 en <code className="font-mono">/api/market/book</code>: la versión desplegada no trae el libro.
       </EmptyState>
     )
   } else if (!book.data && book.error) content = <ErrorState error={book.error} onRetry={book.reload} onRelogin={book.relogin} />
-  else if (book.data.marketClosed) {
+  else if (rows.length === 0) {
     content = (
-      <EmptyState icon="market" title="Mercado cerrado">
-        La central publicó <code className="font-mono">market-closed</code>. El libro vuelve a llenarse cuando abra el mercado del ciclo siguiente.
-      </EmptyState>
-    )
-  } else if (rows.length === 0) {
-    content = (
-      <EmptyState icon="market" title="Nadie publicó ofertas todavía">
-        Aparecen apenas una ciudad publique su <code className="font-mono">offer</code>.
+      <EmptyState icon="market" title="Sin ofertas vigentes">
+        Nadie ha publicado su <code className="font-mono">offer</code> o el mercado ya cerró (<code className="font-mono">market-closed</code>).
+        El libro se llena apenas una ciudad publique en el ciclo siguiente.
       </EmptyState>
     )
   } else {
@@ -120,7 +112,7 @@ export function MarketBook() {
         </div>
         {!table.data && table.error ? (
           <p role="status" className="rounded-xl border border-rose/40 bg-rose/10 px-4 py-3 text-sm dark:bg-rose-soft">
-            No se pudo cargar la distance-table: sin ella no hay transporte ni precio efectivo.
+            No se pudo cargar la distance-table: la oferta propia puede aparecer como “Sin ruta”.
           </p>
         ) : null}
         <TableCard>
@@ -132,7 +124,6 @@ export function MarketBook() {
               <th className={th}>Transporte <span className="normal-case">(CR/kWh)</span></th>
               <SortHeader column={COLUMNS[2]} sort={sort} onSort={onSort} />
               <th className={th}>Ruta</th>
-              <th className={th}>Actualizada</th>
             </tr>
           </thead>
           <tbody>
@@ -149,14 +140,13 @@ export function MarketBook() {
                   {row.effectivePrice != null ? fmt(row.effectivePrice) : <span className={`font-normal ${textSecondary}`}>—</span>}
                 </td>
                 <td className={td}><RouteBadge row={row} /></td>
-                <td className={`${td} whitespace-nowrap tabular-nums ${textSecondary}`}>{fmtTime(row.updatedAt ?? row.publishedAt)}</td>
               </tr>
             ))}
           </tbody>
         </TableCard>
         <p className={`text-xs ${textSecondary}`}>
           Precio efectivo = precio + transporte por kWh según la última distance-table
-          {table.data?.updatedAt ? <> ({fmtTime(table.data.updatedAt)})</> : null}. El remaining puede estar viejo: el
+          {book.data?.distanceTableUpdatedAt ? <> ({fmtTime(book.data.distanceTableUpdatedAt)})</> : null}, calculado por el backend. El remaining puede estar viejo: el
           vendedor responde <code className="font-mono">QUANTITY_UNAVAILABLE</code> con lo que de verdad le queda.
         </p>
       </>
@@ -167,7 +157,7 @@ export function MarketBook() {
     <div className="flex w-full flex-col gap-6">
       <ViewHeader
         title={<><Marker>Mercado</Marker>{book.data?.cycleId ? <> · <span className="font-mono">{book.data.cycleId}</span></> : null}</>}
-        subtitle={countdown ? `Cierra en ${countdown}` : open === false ? 'Mercado cerrado' : 'Libro de ofertas de market.{CODE}'}
+        subtitle="Libro de ofertas de market.{CODE}"
       >
         <RefreshTimer updatedAt={book.updatedAt} intervalMs={book.interval} loading={book.loading} onRefresh={() => { book.reload(); table.reload() }} />
       </ViewHeader>

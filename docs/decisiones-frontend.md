@@ -881,3 +881,19 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 - **Las vistas** conservan su polling en segundo plano. `RefreshTimer` pasa a ser un botón de ícono "Actualizar" (gira mientras carga), con la misma interfaz, así ninguna vista cambia su código.
 - **Alternativa descartada:** mantener ambos relojes. Dos contadores con significados distintos en la misma pantalla.
 - **Dónde vive:** `src/components/CycleClock.jsx` (nuevo), `src/lib/cycles.js` (`cycleClock`, `fmtMmSs`), `src/components/Sidebar.jsx`, `src/components/ui/RefreshTimer.jsx`.
+
+## DF-045 — Integración con la API real (S23): el libro usa el precio efectivo de master y se retiran los mocks
+
+**Fecha:** 2026-11-05 · **Unidad:** S23 · **Decidió:** Esteban (humana: "luego empieza de inmediato con S23"; quitar los mocks estaba en el roadmap) + agente (cómo adaptar cada vista a la forma real)
+
+- **Contexto:** con S5, S6, S7, S8 y S9 en `main` del backend, todas las vistas tienen endpoint real. La forma real coincide con la de los mocks en saldo, swaps, estrategia y métricas (el backend se diseñó desde DF-040..043). Difiere en el libro de ofertas (S6) y en lo que agrega la E-API parte 2 (#54 del backend).
+- **Libro de ofertas (reemplaza la forma propuesta en DF-038):**
+  - La ruta es `GET /api/market/book`, no `/api/market/offers`.
+  - master ya calcula `transportPerEnergy`, `effectivePrice` y `routeEnabled` con la distance-table vigente, incluida la tarifa punitiva (ADR-002, addendum S6). El front **los muestra tal cual** y deja de recalcularlos: así el número es el mismo con el que compra S8. `bookRows(book, ownCity)` solo clasifica la fila (propia, sin ruta, deshabilitada, habilitada); la ciudad propia sale de `cityId` de la distance-table.
+  - El libro real no trae `closesAt`, `marketClosed` ni la hora de cada oferta: se quitan la cuenta regresiva de la vista (el reloj del ciclo ya está en la sidebar, DF-044) y la columna "Actualizada". Sin ofertas vigentes, un solo estado vacío cubre "nadie publicó" y "mercado cerrado".
+- **Conectividad:** sin cambios en el front; muestra la cifra de la tarifa punitiva porque `GET /api/distance-table` ahora expone `disabledRouteTransportCost` (#54 del backend).
+- **Historial (RF01):** etiquetas para los estados de bid reales, `proposed` (vendedor) y `accepting` (comprador); una actualización de la oferta aún en el outbox (`sentAt` null) se marca "En cola"; "Ruta deshabilitada" solo con `routeEnabled === false`; `trade-recorded` se nombra "Transporte registrado", porque en un ciclo de venta la fila del ledger es de auditoría y no un cobro.
+- **Mocks retirados:** se borran `src/mocks/`, `.env.mocks`, `npm run dev:mocks` y `VITE_USE_MOCKS` (cierra DF-025). Para trabajar sin backend de producción se usa master local, como en la E1.
+- **`npm test` en Node 20:** `node --test "src/lib/*.test.js"` con comillas falla en Node 20.19 (no expande globs). Sin comillas lo expande la shell y funciona en 20 y 22.
+- **Alternativa descartada:** seguir calculando el precio efectivo en el front con la distance-table. Son dos fuentes para el mismo número; si master cambia la fórmula (la unidad de `distance` sigue marcada como supuesto en S6), la vista y el comprador divergirían en silencio.
+- **Dónde vive:** `src/lib/market.js`, `src/components/MarketBook.jsx`, `src/api/endpoints.js`, `src/lib/status.js`, `src/components/cycles/CycleDetail.jsx`, `package.json`, `.env.example`.

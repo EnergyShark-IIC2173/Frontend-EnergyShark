@@ -83,6 +83,9 @@ export function validateForm(form) {
   const priceValue = Number(form.price)
   if (!form.price.trim() || !Number.isFinite(priceValue) || priceValue <= 0) {
     errors.price = pct ? 'Porcentaje mayor que 0.' : 'Precio mayor que 0.'
+  } else if (pct && priceValue > 100) {
+    // strategy-config.schema.json: con price_mode pct_of_imbalance, price <= 1 (100 %).
+    errors.price = 'Porcentaje de 100 o menos: no se puede ofertar sobre el imbalancePrice.'
   }
 
   const fixedQuantity = form.quantityMode === 'fixed'

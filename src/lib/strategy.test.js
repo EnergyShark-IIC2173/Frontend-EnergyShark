@@ -41,6 +41,15 @@ test('valida rangos como strategy-config.schema.json', () => {
   assert.ok(validateForm({ ...formFromParams(params), spanSeconds: '20.5' }).errors.spanSeconds)
 })
 
+test('pct_of_imbalance no acepta un porcentaje sobre 100 (price <= 1 del schema)', () => {
+  const form = { ...formFromParams(SUGGESTED_PARAMS), price: '150' }
+  const { params: out, errors } = validateForm(form)
+  assert.equal(out, null)
+  assert.ok(errors.price)
+  assert.equal(validateForm({ ...form, price: '100' }).errors.price, undefined)
+  assert.equal(validateForm({ ...form, priceMode: 'fixed', price: '150' }).errors.price, undefined)
+})
+
 test('cantidad solo se exige en modo fixed', () => {
   const form = { ...formFromParams(params), quantityMode: 'all_sellable', quantity: '' }
   const { params: out, errors } = validateForm(form)

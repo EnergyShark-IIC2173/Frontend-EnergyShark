@@ -897,3 +897,54 @@ El preflight resetea estilos del navegador. Para que nada cambiara:
 - **`npm test` en Node 20:** `node --test "src/lib/*.test.js"` con comillas falla en Node 20.19 (no expande globs). Sin comillas lo expande la shell y funciona en 20 y 22.
 - **Alternativa descartada:** seguir calculando el precio efectivo en el front con la distance-table. Son dos fuentes para el mismo número; si master cambia la fórmula (la unidad de `distance` sigue marcada como supuesto en S6), la vista y el comprador divergirían en silencio.
 - **Dónde vive:** `src/lib/market.js`, `src/components/MarketBook.jsx`, `src/api/endpoints.js`, `src/lib/status.js`, `src/components/cycles/CycleDetail.jsx`, `package.json`, `.env.example`.
+
+## DF-046 — RF01 de la E3: el feed en vivo se consume con `fetch` + `ReadableStream`, no con `EventSource`
+
+**Fecha:** 2026-11-25 · **Unidad:** S18 (E3) · **Decidió:** Esteban (humana: "podemos hacer DF-046? y el mock de feed?"; el roadmap de la E3 ya fijaba `fetch`) + agente (detalle del cliente y de la reconexión)
+
+- **Contexto:**
+  - El RF01 de la E3 pide un feed del panel por Server-Sent Events, **solo para usuarios autenticados**, sin polling desde el navegador, y que un cliente que se reconecta retome desde el último evento visto (`Last-Event-ID`) sin perder los intermedios.
+  - `EventSource` no deja mandar headers: ni `Authorization` ni un `Last-Event-ID` elegido por nosotros (solo lo manda él en sus reconexiones automáticas, que tampoco llevan token).
+  - El API Gateway del grupo es HTTP API: sin response streaming y con un tope de 30 s por integración. El feed sale por `tiburonshark.me` (Nginx → master, S19), que ya valida el JWT.
+- **Decisión: un cliente SSE propio sobre `fetch`.**
+  - Parser según la especificación de SSE (`src/lib/sse.js`): campos `id`, `event`, `data` (multilínea), `retry`, comentarios (`: ping`) y finales de línea `\n`, `\r\n` y `\r`, incluso cuando un `\r\n` llega partido entre dos trozos. Decodificación con `TextDecoder` en modo `stream`, para no romper caracteres UTF-8 partidos.
+  - Cada conexión pide un token a Auth0 (`getAccessTokenSilently`) y manda `Authorization: Bearer …`, `Accept: text/event-stream` y, si hay, `Last-Event-ID` con el último `id` recibido.
+  - **Reconexión:** backoff exponencial con jitter (1 s → 30 s; el `retry:` del servidor reemplaza la base). El contador de intentos vuelve a cero solo cuando llega el primer trozo de datos, así un servidor que abre y cierra no genera un loop rápido.
+  - **Latido:** si no llega ningún byte en 45 s (3 latidos de 15 s), se aborta la conexión y se reconecta. Detecta un Nginx o un proxy que dejó la conexión colgada sin cerrarla.
+  - **401:** un reintento inmediato con token nuevo (`cacheMode: 'off'`). Si vuelve a dar 401, o Auth0 pide login, el feed se detiene en estado "sesión expirada" con botón para volver a iniciar sesión. No se reintenta en loop.
+  - **Duplicados:** el `id` del evento es creciente (`feed_events.id`); se descarta todo evento con `id` menor o igual al último visto.
+  - **`event: reset`:** el servidor lo manda cuando el `Last-Event-ID` ya no está en su tabla. El cliente vacía la lista y olvida el último `id` antes de recibir el backlog nuevo.
+  - La conexión vive a nivel de la app (un provider bajo el login), no de la vista: cambiar de vista no corta el feed ni pierde eventos, y la sidebar puede mostrar el estado y las alertas nuevas.
+  - En memoria se guardan como máximo los 500 eventos más recientes. Para el historial están las otras vistas.
+- **Contrato del evento** (propuesto por Francisca el 24/nov, con los ajustes que le pedimos; **pendiente de quedar en `contratos/openapi.yaml`**):
+  - SSE: `id: <feed_events.id>`, `event: <type>`, `data: <JSON>`.
+  - JSON: `id`, `ts`, `type`, `severity` (`info` | `warn` | `error`), `cycleId`, `swapId`, `idpk`, `execution` (`name`, `arn`, `consoleUrl`, `role`, `status`; solo en `saga.*`), `summary`, `payload`. Las llaves están siempre, con `null` si no aplican.
+  - Tipos: `market.offer_seen`, `market.bid_sent`, `market.bid_received`, `market.bid_result`, `wallet.event`, `saga.started`, `saga.terminal`, `saga.compensated`, `alert.fired`, `registry.discarded`.
+  - El panel solo depende de las llaves fijas, de `payload.result`/`reason` en `market.bid_result` y de `payload.alert` en `alert.fired`. Un `type` desconocido se muestra igual, con tono neutro (compatibilidad hacia adelante).
+- **Alternativas descartadas:**
+  - `EventSource` con el token en la query (`?access_token=`): el JWT queda en los logs de Nginx y de master y en el historial del navegador.
+  - Cookie de sesión para el feed: master no maneja sesiones y habría que montar CSRF y cookies cross-site entre `app.` y `tiburonshark.me` solo para esta ruta.
+  - Librería `@microsoft/fetch-event-source`: resuelve lo mismo, pero sin mantenimiento desde 2021 y con su propia política de reintentos que choca con la del 401. El parser propio es corto y se prueba con `node --test`.
+  - WebSocket: el enunciado pide SSE.
+- **Dónde vive:** `src/lib/sse.js` (parser), `src/lib/feedClient.js` (conexión, reconexión, latido, dedup), `src/lib/feed.js` (normalización y tipos), `src/feed/` (provider y hook), `VITE_FEED_URL` en `.env.example`.
+
+## DF-047 — Vista "En vivo" y servidor SSE de prueba fuera del bundle
+
+**Fecha:** 2026-11-25 · **Unidad:** S18 (E3) · **Decidió:** Esteban (humana: pidió el mock del feed para no depender de S17) + agente (forma de la vista y del mock)
+
+- **Contexto:** el backend del feed (S17, Francisca) y la ruta de Nginx (S19) todavía no existen. En DF-045 se retiraron los mocks dentro de la app (`VITE_USE_MOCKS`), y la regla quedó en trabajar contra un servidor local.
+- **Mock: un servidor SSE aparte, `scripts/mock-feed-server.mjs`** (Node, sin dependencias, puerto 3002).
+  - Habla SSE de verdad: exige `Authorization: Bearer`, respeta `Last-Event-ID` y el `?lastEventId=`, manda backlog (los últimos 100) a un cliente nuevo y `event: reset` cuando el id pedido ya no está, `retry:` y latido `: ping` cada 15 s.
+  - Genera historias coherentes: ofertas de otras ciudades, bids enviados y recibidos con su resultado, sagas de vendedor y de comprador que terminan liquidadas, rechazadas o compensadas (con su `wallet.event`), alertas de las 5 del enunciado y descartes de RF05.
+  - Para probar la reconexión, corta cada conexión a los 60 s (`MOCK_FEED_DROP_MS`) y puede reiniciar su numeración (`MOCK_FEED_RESET_MS`).
+  - Así el código de la app es el mismo contra el mock y contra producción, y el mock sirve de referencia ejecutable del contrato para S17.
+  - `npm run mock:feed` levanta el servidor; `npm run dev:feed` levanta Vite con el proxy de `/api/feed` apuntando a él. Sin eso, `/api/feed` va a master local (:3001), como el resto de `/api`.
+- **Vista "En vivo"** (primera de la sidebar, porque es la que se mira durante el incidente de la demo):
+  - Estado de la conexión siempre visible: en vivo, conectando, reconectando (con cuenta regresiva e intento), sesión expirada. Muestra el último `id` recibido.
+  - **Alertas disparadas** arriba, con su umbral y el enlace a su entrada del runbook (`docs/runbook-alertas.md`, S24).
+  - Lista de eventos, del más nuevo al más viejo: hora, tipo, severidad, resumen, `cycleId`, `swapId`, `idpk`; en las sagas, rol, estado terminal y **enlace a la ejecución en la consola de Step Functions**. Al abrir un evento se ve su `payload`.
+  - Filtros por grupo (mercado, wallet, sagas, alertas, registro) con conteo, por severidad mínima y búsqueda por `swapId`, `cycleId` o `idpk`. Los filtros son locales: no reabren la conexión.
+  - **Pausar:** congela la lista para leerla (el feed sigue recibiendo) y muestra cuántos eventos nuevos esperan.
+  - En la sidebar, un punto con el estado de la conexión y el número de alertas que llegaron mientras se miraba otra vista.
+- **Alternativa descartada:** volver a meter mocks en el bundle tras una variable de entorno. Contradice DF-045 y no prueba ni el parser ni la reconexión ni los headers.
+- **Dónde vive:** `scripts/mock-feed-server.mjs`, `vite.config.js`, `package.json`, `src/components/LiveFeed.jsx`, `src/components/feed/`, `src/components/Sidebar.jsx`, `src/App.jsx`.

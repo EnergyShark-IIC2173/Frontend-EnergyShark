@@ -23,6 +23,7 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 | `tarea-s13-estrategia/` | S13 — estrategia versionada y swaps en curso (RF04) y experimento de span (RF06) | `feat/e2-s13-estrategia`, apilada sobre `feat/e2-s12-mercado` |
 | `tarea-s14-rf05-saldo/` | S14 — RF05 con pares (origen y filtros) y vista Saldo (AD5) | `feat/e2-s14-rf05-saldo`, apilada sobre `feat/e2-s13-estrategia` |
 | `tarea-s23-api-real/` | S23 — integración con la API real: libro con el precio efectivo de master, retiro de los mocks, estados de bid reales y `npm test` en Node 20 (DF-045) | `feat/e2-s23-api-real`, desde `main` |
+| `tarea-s18-feed/` | S18 (E3) — panel RF01: feed en vivo por SSE con `fetch`, reconexión desde `Last-Event-ID`, vista "En vivo" y servidor SSE de prueba (DF-046, DF-047) | `feat/e3-s18-feed`, desde `main` |
 
 **Sesión del 2026-09-29 (`tarea-v6-rediseno/`):**
 - A diferencia de la anterior, **hubo prompt maestro** de Esteban, que está literal en `01`.
@@ -59,6 +60,10 @@ Registro de cada subtarea ejecutada con IA en el frontend de EnergyShark. Comple
 - Prompt corto de Esteban (literal en `01`), sin modo plan ni subagentes, en la misma sesión que la E-API parte 2 del backend (#54).
 - DF-045 se commiteó antes del código. El prompt de subtarea se escribió durante la sesión y el registro al cierre.
 - **Corrección (2026-11-05):** las filas de `tarea-s12-mercado/`, `tarea-s13-estrategia/` y `tarea-s14-rf05-saldo/` estaban por error en la tabla de Pedro; se movieron a esta sección (las sesiones son de Esteban).
+
+**Sesión del 2026-11-25 (`tarea-s18-feed/`, E3):**
+- Prompt corto de Esteban (literal en `01`), sin modo plan ni subagentes, en la misma sesión que el análisis del enunciado de la E3 y la revisión del contrato del feed de Francisca.
+- DF-046 y DF-047 se commitearon antes del código. **Los prompts de subtarea se escribieron al cierre de la sesión**, a partir de lo hecho en la rama, no durante cada subtarea.
 
 Tareas **no** ejecutadas:
 - ~~El resto de V6: estados de carga y de error, y responsive de las vistas.~~ **Corrección (2026-09-29):** el responsive quedó hecho en `tarea-v6-rediseno/`. Siguen pendientes los estados de carga y de error por vista, porque requieren estado nuevo.

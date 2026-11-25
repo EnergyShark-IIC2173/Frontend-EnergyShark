@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "test": "node --test src/lib/*.test.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mock:feed": "node scripts/mock-feed-server.mjs",
+    "dev:feed": "FEED_PROXY_TARGET=http://localhost:3002 vite"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.27.0",

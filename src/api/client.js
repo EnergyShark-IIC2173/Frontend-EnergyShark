@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 // Errores de Auth0 que solo se resuelven volviendo a iniciar sesión.
 // invalid_grant / missing_refresh_token: el refresh token venció, fue revocado o no existe.
-const RELOGIN_ERRORS = ["login_required", "consent_required", "invalid_grant", "missing_refresh_token"];
+export const RELOGIN_ERRORS = ["login_required", "consent_required", "invalid_grant", "missing_refresh_token"];
 
 // status 0 = no hubo respuesta HTTP (red, CORS). body = cuerpo ya parseado de la respuesta.
 export class ApiError extends Error {

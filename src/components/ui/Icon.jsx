@@ -1,6 +1,6 @@
 import {
   ArrowClockwise, ArrowsLeftRight, ArrowsOut, ChartBar, Clock, BatteryHigh, CaretDown, CaretUp, CaretLeft, CaretRight, CaretUpDown, CheckCircle, MagnifyingGlass, CaretDoubleLeft, CaretDoubleRight, ClockCounterClockwise, Copy, Lightning, Moon, Plug, Pulse, ShareNetwork, SignOut,
-  SidebarSimple, List, SlidersHorizontal, Storefront, X, Sun, Wallet, Warning, WarningCircle,
+  SidebarSimple, List, ArrowSquareOut, Broadcast, Pause, Play, SlidersHorizontal, Storefront, X, Sun, Wallet, Warning, WarningCircle,
 } from '@phosphor-icons/react'
 
 // Íconos de Phosphor, peso bold (DF-030; reemplaza los SVG a mano de DF-010). Siempre decorativos: aria-hidden.
@@ -37,6 +37,10 @@ const icons = {
   plug: Plug,
   sun: Sun,
   moon: Moon,
+  external: ArrowSquareOut,
+  live: Broadcast,
+  pause: Pause,
+  play: Play,
 }
 
 export function Icon({ name, className = 'size-5' }) {

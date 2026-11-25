@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { LoginButton } from './components/LoginButton'
 import { CycleHistory } from './components/CycleHistory'
+import { LiveFeed } from './components/LiveFeed'
+import { FeedProvider } from './feed/FeedProvider'
 import { BalanceDashboard } from './components/BalanceDashboard'
 import { DistanceTable } from './components/DistanceTable'
 import { MarketBook } from './components/MarketBook'
@@ -19,7 +21,7 @@ const INTRO_KEY = 'energyshark-intro'
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
-  const [activeView, setActiveView] = useState('history')
+  const [activeView, setActiveView] = useState('feed')
   // Sidebar plegada desde md (se recuerda) y cajón abierto bajo md (DF-032).
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -85,31 +87,35 @@ function App() {
     </AuthScreen>
   )
   else if (!isLoading) content = (
-    <div className="min-h-svh bg-paper md:flex dark:bg-ink">
-      <Sidebar
-        activeView={activeView}
-        onSelect={selectView}
-        collapsed={collapsed}
-        onToggle={toggleSidebar}
-        mobileOpen={mobileOpen}
-        onMobileOpen={() => setMobileOpen(true)}
-        onMobileClose={closeMobile}
-      />
+    // Una conexión al feed para toda la sesión: cambiar de vista no la corta (DF-046).
+    <FeedProvider>
+      <div className="min-h-svh bg-paper md:flex dark:bg-ink">
+        <Sidebar
+          activeView={activeView}
+          onSelect={selectView}
+          collapsed={collapsed}
+          onToggle={toggleSidebar}
+          mobileOpen={mobileOpen}
+          onMobileOpen={() => setMobileOpen(true)}
+          onMobileClose={closeMobile}
+        />
 
-      {/* Fondo plano: más serio para un dashboard (DF-032) */}
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
-        <div className="mx-auto w-full max-w-6xl">
-          {/* Renderizado condicional de las vistas */}
-          {activeView === 'history' && <CycleHistory />}
-          {activeView === 'market' && <MarketBook />}
-          {activeView === 'strategy' && <StrategyAdmin />}
-          {activeView === 'experiment' && <SpanExperiment />}
-          {activeView === 'balance' && <BalanceDashboard />}
-          {activeView === 'distance' && <DistanceTable />}
-          {activeView === 'rejected' && <RejectedMessages />}
-        </div>
-      </main>
-    </div>
+        {/* Fondo plano: más serio para un dashboard (DF-032) */}
+        <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
+          <div className="mx-auto w-full max-w-6xl">
+            {/* Renderizado condicional de las vistas */}
+            {activeView === 'feed' && <LiveFeed />}
+            {activeView === 'history' && <CycleHistory />}
+            {activeView === 'market' && <MarketBook />}
+            {activeView === 'strategy' && <StrategyAdmin />}
+            {activeView === 'experiment' && <SpanExperiment />}
+            {activeView === 'balance' && <BalanceDashboard />}
+            {activeView === 'distance' && <DistanceTable />}
+            {activeView === 'rejected' && <RejectedMessages />}
+          </div>
+        </main>
+      </div>
+    </FeedProvider>
   )
 
   // La vista se monta cuando la intro empieza a fundirse, así la entrada de las tarjetas se alcanza a ver (DF-033).

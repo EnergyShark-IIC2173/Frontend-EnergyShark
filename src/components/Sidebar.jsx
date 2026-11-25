@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
+import { useFeed } from '../feed/feedContext'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useCycleClock } from '../hooks/useCycleClock'
 import { CycleClock } from './CycleClock'
+import { StatusDot } from './feed/ConnectionStatus'
 import { Icon } from './ui/Icon'
 import { Logo, LogoMark } from './ui/Logo'
 import { ThemeSwitch } from './ui/ThemeSwitch'
@@ -9,6 +11,7 @@ import { UserMenu } from './ui/UserMenu'
 import { divider, labelBase, navItemActive, navItemInactive, textSecondary } from './ui/classes'
 
 const NAV_ITEMS = [
+  { id: 'feed', icon: 'live', label: 'En vivo' },
   { id: 'history', icon: 'history', label: 'Historial de Ciclos' },
   { id: 'market', icon: 'market', label: 'Mercado' },
   { id: 'strategy', icon: 'strategy', label: 'Estrategia' },
@@ -31,6 +34,7 @@ export function Sidebar({ activeView, onSelect, collapsed, onToggle, mobileOpen,
   const rail = desktop && collapsed
   const hidden = !desktop && !mobileOpen
   const clock = useCycleClock()
+  const feed = useFeed()
 
   useEffect(() => {
     if (!mobileOpen) return undefined
@@ -95,10 +99,19 @@ export function Sidebar({ activeView, onSelect, collapsed, onToggle, mobileOpen,
               onClick={() => onSelect(item.id)}
               aria-current={activeView === item.id ? 'page' : undefined}
               title={rail ? item.label : undefined}
-              className={`${activeView === item.id ? navItemActive : navItemInactive} ${rail ? 'justify-center' : ''}`}
+              className={`relative ${activeView === item.id ? navItemActive : navItemInactive} ${rail ? 'justify-center' : ''}`}
             >
-              <Icon name={item.icon} />
+              <span className="relative">
+                <Icon name={item.icon} />
+                {/* Feed (DF-047): punto con el estado de la conexión y alertas llegadas mientras se miraba otra vista. */}
+                {item.id === 'feed' ? <StatusDot status={feed.status} className="absolute -top-0.5 -right-0.5 size-2 ring-2 ring-paper dark:ring-ink" /> : null}
+              </span>
               <span className={rail ? 'sr-only' : 'truncate motion-safe:animate-fade-in'}>{item.label}</span>
+              {item.id === 'feed' && feed.unseenAlerts > 0 ? (
+                <span className={`rounded-lg bg-coral/15 px-1.5 text-xs font-semibold text-coral-ink tabular-nums dark:text-coral ${rail ? 'absolute top-1 right-1' : 'ml-auto'}`}>
+                  {feed.unseenAlerts}<span className="sr-only"> alertas nuevas</span>
+                </span>
+              ) : null}
             </button>
           ))}
         </nav>
